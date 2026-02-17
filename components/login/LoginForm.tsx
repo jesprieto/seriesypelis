@@ -63,14 +63,6 @@ export default function LoginForm() {
             Regístrate
           </Link>
         </p>
-        <p className="mt-2 text-center">
-          <Link
-            href="/admin"
-            className="text-gray-400 hover:text-gray-600 text-xs"
-          >
-            Acceso administrador
-          </Link>
-        </p>
       </form>
     </div>
   );

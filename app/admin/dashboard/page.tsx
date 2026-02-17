@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useAdmin } from "@/context/AdminContext";
 import { LogOut, LayoutDashboard } from "lucide-react";
 import CrearPlataformaTab from "@/components/admin/CrearPlataformaTab";
@@ -48,13 +47,15 @@ export default function AdminDashboardPage() {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
-            <Link
-              href="/dashboard/planes"
+            <a
+              href={`${process.env.NEXT_PUBLIC_MAIN_SITE_URL || "https://seriesypelis.lat"}/dashboard/planes`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
             >
               <LayoutDashboard className="w-5 h-5" />
               <span className="text-sm font-medium">Ir al sitio</span>
-            </Link>
+            </a>
             <span className="text-gray-300">|</span>
             <h1 className="text-xl font-bold text-gray-900">Panel Admin</h1>
           </div>

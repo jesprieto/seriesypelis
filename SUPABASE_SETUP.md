@@ -83,3 +83,13 @@ Ya está creada la capa de datos en `lib/supabaseData.ts` con funciones equivale
 | `contarPerfilesDisponibles()` | `contarPerfilesDisponiblesInSupabase()` |
 
 **Siguiente paso**: Migrar los componentes para usar estas funciones async cuando Supabase esté configurado. Las funciones de Supabase son **asíncronas**, por lo que habrá que adaptar `AuthContext`, `RegisterForm`, `PlanCard`, `planes/page`, `AccesosTab`, `ClientesTab`, `CrearPlataformaTab` y `Sidebar` para cargar datos de forma async (por ejemplo con `useEffect` + `useState` o SWR).
+
+---
+
+## Admin en subdominio (admin.seriesypelis.lat)
+
+El panel de administración está pensado para usarse en **admin.seriesypelis.lat**. En Vercel:
+
+1. Asigna al **mismo proyecto** los dos dominios: `seriesypelis.lat` y `admin.seriesypelis.lat`.
+2. El **middleware** (`middleware.ts`) redirige: si alguien entra a `seriesypelis.lat/admin` va a `admin.seriesypelis.lat/admin`; si entra a `admin.seriesypelis.lat/` va a `admin.seriesypelis.lat/admin`.
+3. Opcional: en **Variables de entorno** define `NEXT_PUBLIC_MAIN_SITE_URL=https://seriesypelis.lat` para que el enlace "Ir al sitio" del panel apunte al sitio principal.
