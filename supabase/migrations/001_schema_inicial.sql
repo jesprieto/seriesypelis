@@ -112,16 +112,16 @@ CREATE POLICY "Allow all for service role" ON cuentas_plataforma FOR ALL USING (
 CREATE POLICY "Allow all for service role" ON perfiles FOR ALL USING (true);
 CREATE POLICY "Allow all for service role" ON admin_usuarios FOR ALL USING (true);
 
--- Datos iniciales
+-- Datos iniciales (nombres unificados según PLATAFORMAS_OFICIALES)
 INSERT INTO planes (id, nombre, precio) VALUES
   ('1', 'Crunchyroll', 1500),
   ('2', 'Netflix', 12000),
   ('3', 'Disney+', 8000),
   ('4', 'HBO Max', 10000),
-  ('5', 'Amazon Prime', 7500),
-  ('6', 'Apple TV+', 5500),
+  ('5', 'Prime', 7500),
+  ('6', 'Appletv', 5500),
   ('7', 'Spotify', 5500),
-  ('8', 'DIRECTV', 10000),
+  ('8', 'Directv', 10000),
   ('9', 'Win Sports+', 16000);
 
 INSERT INTO admin_usuarios (usuario, clave) VALUES ('admin', 'admin123');

@@ -113,12 +113,13 @@ export default function Sidebar() {
       </button>
       {mobileOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black/30 z-40"
+          className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
           onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
         />
       )}
       <aside
-        className={`w-64 min-h-screen bg-gray-100 border-r border-gray-200 flex flex-col shrink-0 fixed md:static inset-y-0 left-0 z-50 transform transition-transform md:transform-none ${
+        className={`w-64 min-h-screen bg-white md:bg-gray-100 border-r border-gray-200 flex flex-col shrink-0 fixed md:static inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-out md:transform-none shadow-xl md:shadow-none ${
           mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >

@@ -6,6 +6,7 @@ import {
   agregarCuentaAlInventario,
   setInventario,
 } from "@/lib/data";
+import { PLATAFORMAS_OFICIALES, normalizarPlataforma } from "@/lib/plataformas";
 import type { InventarioPlataforma, CuentaPlataforma, Perfil } from "@/lib/mockData";
 import { ChevronDown, ChevronRight, Plus, Upload, Pencil, Search } from "lucide-react";
 import ProcesandoSpinner from "@/components/ui/ProcesandoSpinner";
@@ -173,8 +174,10 @@ export default function AccesosTab() {
       for (let i = 1; i < lines.length; i++) {
         const cols = lines[i].split(",").map((c) => c.trim());
         if (cols.length < 4) continue;
-        const [plataforma, correo, contraseña, ...pins] = cols;
-        if (!plataforma || !correo || !contraseña) continue;
+        const [plataformaRaw, correo, contraseña, ...pins] = cols;
+        if (!plataformaRaw || !correo || !contraseña) continue;
+        const plataforma = normalizarPlataforma(plataformaRaw);
+        if (!PLATAFORMAS_OFICIALES.includes(plataforma as (typeof PLATAFORMAS_OFICIALES)[number])) continue;
         const pinsArr = pins.slice(0, 6);
         if (pinsArr.filter((p) => p).length === 0) continue;
         const cuenta: CuentaPlataforma = {
@@ -192,11 +195,6 @@ export default function AccesosTab() {
     reader.readAsText(file);
     if (csvRef.current) csvRef.current.value = "";
   };
-
-  const plataformasConocidas = [
-    "Netflix", "Crunchyroll", "Disney+", "HBO Max",
-    "Amazon Prime", "Apple TV+", "Spotify", "DIRECTV", "Win Sports+",
-  ];
 
   const busquedaLower = busquedaCorreo.trim().toLowerCase();
   const inventarioFiltrado = busquedaLower
@@ -290,7 +288,7 @@ export default function AccesosTab() {
                 className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
               >
                 <option value="">Seleccionar...</option>
-                {plataformasConocidas.map((p) => (
+                {PLATAFORMAS_OFICIALES.map((p) => (
                   <option key={p} value={p}>{p}</option>
                 ))}
               </select>

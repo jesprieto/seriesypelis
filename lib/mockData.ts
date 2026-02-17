@@ -236,6 +236,17 @@ export function setInventario(inv: InventarioPlataforma[]): void {
   setInStorage(STORAGE_INVENTARIO, inv);
 }
 
+/** Crea la entrada en inventario si no existe (para sincronizar planes con inventario) */
+export function ensureInventarioPlataformaExists(plataforma: string): void {
+  const inv = getInventario();
+  const nombre = plataforma.trim();
+  const existe = inv.some((i) => i.plataforma.toLowerCase() === nombre.toLowerCase());
+  if (!existe) {
+    inv.push({ plataforma: nombre, cuentas: [] });
+    setInventario(inv);
+  }
+}
+
 export function agregarCuentaAlInventario(
   plataforma: string,
   cuenta: CuentaPlataforma

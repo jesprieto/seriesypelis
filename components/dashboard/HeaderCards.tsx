@@ -34,8 +34,8 @@ export default function HeaderCards({ historialCompras, saldo, onRefresh }: Head
   }).format(saldo);
 
   return (
-    <div className="flex gap-3 flex-wrap">
-      <div className="bg-gray-100 rounded-xl border border-gray-200 px-4 py-3 shadow-sm min-w-[160px]">
+    <div className="grid grid-cols-2 md:flex md:flex-wrap gap-3 w-full md:w-auto">
+      <div className="bg-gray-100 rounded-xl border border-gray-200 px-4 py-3 shadow-sm min-w-0">
         <div className="flex items-center gap-3">
           <Monitor className="w-5 h-5 text-gray-500 shrink-0" />
           <div>
@@ -59,13 +59,13 @@ export default function HeaderCards({ historialCompras, saldo, onRefresh }: Head
           </div>
         </div>
       </div>
-      <div className="bg-gray-100 rounded-xl border border-gray-200 px-4 py-3 shadow-sm min-w-[160px]">
+      <div className="bg-gray-100 rounded-xl border border-gray-200 px-4 py-3 shadow-sm min-w-0">
         <div className="flex items-center gap-3">
           <Wallet className="w-5 h-5 text-gray-500 shrink-0" />
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 overflow-hidden">
             <p className="text-xs text-gray-500 mb-0.5">Saldo actual</p>
-            <div className="flex items-center gap-2">
-              <p className="text-lg font-bold text-gray-900">{formattedSaldo}</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-base md:text-lg font-bold text-gray-900 truncate">{formattedSaldo}</p>
               {onRefresh && (
                 <button
                   type="button"

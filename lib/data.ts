@@ -4,6 +4,7 @@
  */
 
 import { isSupabaseConfigured } from "./supabase";
+import { normalizarPlataforma } from "./plataformas";
 import * as mock from "./mockData";
 import * as db from "./supabaseData";
 import type { Plan, Cliente, Compra, InventarioPlataforma, CuentaPlataforma } from "./mockData";
@@ -80,8 +81,9 @@ export async function asignarPerfilDisponible(
   plataforma: string,
   clienteCorreo: string
 ): Promise<{ correo: string; contraseña: string; perfil: number; pin: string; fechaExpiracion: string; fechaExpiracionISO: string } | null> {
-  if (isSupabaseConfigured()) return db.asignarPerfilDisponibleInSupabase(plataforma, clienteCorreo);
-  return mock.asignarPerfilDisponible(plataforma, clienteCorreo);
+  const nombreNorm = normalizarPlataforma(plataforma);
+  if (isSupabaseConfigured()) return db.asignarPerfilDisponibleInSupabase(nombreNorm, clienteCorreo);
+  return mock.asignarPerfilDisponible(nombreNorm, clienteCorreo);
 }
 
 export async function insertarCompra(clienteCorreo: string, compra: Compra): Promise<void> {
@@ -91,8 +93,9 @@ export async function insertarCompra(clienteCorreo: string, compra: Compra): Pro
 }
 
 export async function contarPerfilesDisponibles(plataforma: string): Promise<number> {
-  if (isSupabaseConfigured()) return db.contarPerfilesDisponiblesInSupabase(plataforma);
-  return mock.contarPerfilesDisponibles(plataforma);
+  const nombreNorm = normalizarPlataforma(plataforma);
+  if (isSupabaseConfigured()) return db.contarPerfilesDisponiblesInSupabase(nombreNorm);
+  return mock.contarPerfilesDisponibles(nombreNorm);
 }
 
 // ─── Inventario ───
@@ -110,14 +113,24 @@ export async function setInventario(inv: InventarioPlataforma[]): Promise<void> 
   }
 }
 
+export async function ensureInventarioPlataformaExists(plataforma: string): Promise<void> {
+  const nombreNorm = normalizarPlataforma(plataforma);
+  if (isSupabaseConfigured()) {
+    await db.ensureInventarioPlataformaExistsInSupabase(nombreNorm);
+  } else {
+    mock.ensureInventarioPlataformaExists(nombreNorm);
+  }
+}
+
 export async function agregarCuentaAlInventario(
   plataforma: string,
   cuenta: CuentaPlataforma
 ): Promise<void> {
+  const nombreNorm = normalizarPlataforma(plataforma);
   if (isSupabaseConfigured()) {
-    await db.agregarCuentaAlInventarioInSupabase(plataforma, cuenta);
+    await db.agregarCuentaAlInventarioInSupabase(nombreNorm, cuenta);
   } else {
-    mock.agregarCuentaAlInventario(plataforma, cuenta);
+    mock.agregarCuentaAlInventario(nombreNorm, cuenta);
   }
 }
 

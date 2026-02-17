@@ -43,6 +43,7 @@ export async function setPlanesInSupabase(planes: Plan[]): Promise<void> {
       { onConflict: "id" }
     );
     if (error) console.error("upsert plan error:", error);
+    await ensureInventarioPlataformaExistsInSupabase(p.nombre);
   }
 }
 
@@ -53,6 +54,7 @@ export async function updatePlanInSupabase(plan: Plan): Promise<void> {
     .update({ nombre: plan.nombre, precio: plan.precio, imagen: plan.imagen ?? null })
     .eq("id", plan.id);
   if (error) console.error("updatePlan error:", error);
+  await ensureInventarioPlataformaExistsInSupabase(plan.nombre);
 }
 
 export async function deletePlanFromSupabase(planId: string): Promise<void> {
@@ -243,6 +245,21 @@ export async function setInventarioInSupabase(inv: InventarioPlataforma[]): Prom
         );
       }
     }
+  }
+}
+
+/** Crea la entrada en inventario_plataformas si no existe (para sincronizar planes con inventario) */
+export async function ensureInventarioPlataformaExistsInSupabase(plataforma: string): Promise<void> {
+  if (!isSupabaseConfigured() || !plataforma.trim()) return;
+  const nombre = plataforma.trim();
+  const { data: existente } = await supabase
+    .from("inventario_plataformas")
+    .select("id")
+    .eq("plataforma", nombre)
+    .maybeSingle();
+  if (!existente) {
+    const { error } = await supabase.from("inventario_plataformas").insert({ plataforma: nombre });
+    if (error) console.error("ensureInventarioPlataformaExists error:", error);
   }
 }
 

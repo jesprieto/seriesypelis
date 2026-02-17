@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { Pencil, Trash2 } from "lucide-react";
 import { getPlanes, setPlanes, updatePlan, deletePlan, contarPerfilesDisponibles } from "@/lib/data";
+import { PLATAFORMAS_OFICIALES } from "@/lib/plataformas";
 import ProcesandoSpinner from "@/components/ui/ProcesandoSpinner";
 import { uploadPlatformImage } from "@/lib/storage";
 import { isSupabaseConfigured } from "@/lib/supabase";
@@ -139,8 +140,8 @@ export default function CrearPlataformaTab() {
     e.preventDefault();
     setMensaje(null);
     const valor = parseInt(precio.replace(/\D/g, ""), 10);
-    if (!nombre.trim()) {
-      setMensaje({ tipo: "error", text: "El nombre es obligatorio" });
+    if (!nombre) {
+      setMensaje({ tipo: "error", text: "Selecciona una plataforma" });
       return;
     }
     if (isNaN(valor) || valor <= 0) {
@@ -177,7 +178,7 @@ export default function CrearPlataformaTab() {
       const lista = await getPlanes();
       const nuevoPlan: Plan = {
         id: planId,
-        nombre: nombre.trim(),
+        nombre,
         precio: valor,
         imagen: imagenUrl,
       };
@@ -315,15 +316,19 @@ export default function CrearPlataformaTab() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nombre
+              Plataforma
             </label>
-            <input
-              type="text"
+            <select
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              placeholder="Ej: Netflix"
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400"
-            />
+              required
+            >
+              <option value="">Seleccionar plataforma...</option>
+              {PLATAFORMAS_OFICIALES.filter((p) => !planes.some((plan) => plan.nombre === p)).map((plat) => (
+                <option key={plat} value={plat}>{plat}</option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -450,14 +455,14 @@ export default function CrearPlataformaTab() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                <input
-                  type="text"
+                <label className="block text-sm font-medium text-gray-700 mb-1">Plataforma</label>
+                <select
                   value={editNombre}
-                  onChange={(e) => setEditNombre(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
-                  required
-                />
+                  disabled
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-600 cursor-not-allowed"
+                >
+                  <option value={editNombre}>{editNombre}</option>
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Valor (COP)</label>
