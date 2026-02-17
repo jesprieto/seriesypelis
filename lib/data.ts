@@ -6,7 +6,7 @@
 import { isSupabaseConfigured } from "./supabase";
 import * as mock from "./mockData";
 import * as db from "./supabaseData";
-import type { Plan, Cliente, Compra } from "./mockData";
+import type { Plan, Cliente, Compra, InventarioPlataforma, CuentaPlataforma } from "./mockData";
 
 // ─── Planes ───
 
@@ -93,6 +93,32 @@ export async function insertarCompra(clienteCorreo: string, compra: Compra): Pro
 export async function contarPerfilesDisponibles(plataforma: string): Promise<number> {
   if (isSupabaseConfigured()) return db.contarPerfilesDisponiblesInSupabase(plataforma);
   return mock.contarPerfilesDisponibles(plataforma);
+}
+
+// ─── Inventario ───
+
+export async function getInventario(): Promise<InventarioPlataforma[]> {
+  if (isSupabaseConfigured()) return db.getInventarioFromSupabase();
+  return mock.getInventario();
+}
+
+export async function setInventario(inv: InventarioPlataforma[]): Promise<void> {
+  if (isSupabaseConfigured()) {
+    await db.setInventarioInSupabase(inv);
+  } else {
+    mock.setInventario(inv);
+  }
+}
+
+export async function agregarCuentaAlInventario(
+  plataforma: string,
+  cuenta: CuentaPlataforma
+): Promise<void> {
+  if (isSupabaseConfigured()) {
+    await db.agregarCuentaAlInventarioInSupabase(plataforma, cuenta);
+  } else {
+    mock.agregarCuentaAlInventario(plataforma, cuenta);
+  }
 }
 
 // ─── Otros (re-export) ───

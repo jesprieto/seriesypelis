@@ -53,77 +53,9 @@ export interface Cliente {
   historialCompras: Compra[];
 }
 
-const PLANES_INICIALES: Plan[] = [
-  { id: "1", nombre: "Crunchyroll", precio: 1500 },
-  { id: "2", nombre: "Netflix", precio: 12000 },
-  { id: "3", nombre: "Disney+", precio: 8000 },
-  { id: "4", nombre: "HBO Max", precio: 10000 },
-  { id: "5", nombre: "Amazon Prime", precio: 7500 },
-  { id: "6", nombre: "Apple TV+", precio: 5500 },
-  { id: "7", nombre: "Spotify", precio: 5500 },
-  { id: "8", nombre: "DIRECTV", precio: 10000 },
-  { id: "9", nombre: "Win Sports+", precio: 16000 },
-];
+const PLANES_INICIALES: Plan[] = [];
 
-const TEST_HISTORIAL: Compra[] = [
-  {
-    codigo: "45231",
-    estado: "Disponible",
-    fechaCompra: "10/02/2025, 14:30",
-    fechaCompraISO: "2025-02-10T14:30:00.000Z",
-    plataforma: "Netflix",
-    informacion: "test@...",
-    valorCompra: 12000,
-    correo: "netflix.cuenta1@gmail.com",
-    contraseña: "nfPass2025",
-    perfil: 1,
-    pin: "1234",
-    fechaExpiracion: "12/03/2025",
-    fechaExpiracionISO: "2025-03-12T14:30:00.000Z",
-  },
-  {
-    codigo: "78192",
-    estado: "Disponible",
-    fechaCompra: "08/02/2025, 09:15",
-    fechaCompraISO: "2025-02-08T09:15:00.000Z",
-    plataforma: "Crunchyroll",
-    informacion: "test@...",
-    valorCompra: 1500,
-    correo: "crunchy.cuenta1@outlook.com",
-    contraseña: "crPass2025",
-    perfil: 2,
-    pin: "2222",
-    fechaExpiracion: "10/03/2025",
-    fechaExpiracionISO: "2025-03-10T09:15:00.000Z",
-  },
-  {
-    codigo: "92341",
-    estado: "Expirado",
-    fechaCompra: "15/01/2025, 16:45",
-    fechaCompraISO: "2025-01-15T16:45:00.000Z",
-    plataforma: "Disney+",
-    informacion: "test@...",
-    valorCompra: 8000,
-    correo: "disney.cuenta1@yahoo.com",
-    contraseña: "dpPass2025",
-    perfil: 3,
-    pin: "300300",
-    fechaExpiracion: "14/02/2025",
-    fechaExpiracionISO: "2025-02-14T16:45:00.000Z",
-  },
-];
-
-const CLIENTES_INICIALES: Cliente[] = [
-  {
-    id: "1",
-    nombre: "Test Usuario",
-    correo: "test@test.com",
-    contraseña: "test123",
-    avatarEmoji: "😊",
-    saldo: 0,
-    historialCompras: TEST_HISTORIAL,
-  },
-];
+const CLIENTES_INICIALES: Cliente[] = [];
 
 const STORAGE_PLANES = "pelis-series-planes";
 const STORAGE_USERS = "pelis-series-users-db";
@@ -294,75 +226,7 @@ export interface InventarioPlataforma {
 
 const STORAGE_INVENTARIO = "pelis-series-inventario";
 
-const INVENTARIO_INICIAL: InventarioPlataforma[] = [
-  {
-    plataforma: "Netflix",
-    cuentas: [
-      {
-        id: "inv-1",
-        correo: "netflix.cuenta1@gmail.com",
-        contraseña: "nfPass2025",
-        perfiles: [
-          { numero: 1, pin: "1234", estado: "ocupado", clienteCorreo: "test@test.com", fechaAsignacion: "10/02/2025", fechaExpiracion: "12/03/2025" },
-          { numero: 2, pin: "5678", estado: "disponible" },
-          { numero: 3, pin: "9012", estado: "disponible" },
-          { numero: 4, pin: "3456", estado: "disponible" },
-          { numero: 5, pin: "7890", estado: "disponible" },
-          { numero: 6, pin: "2345", estado: "disponible" },
-        ],
-      },
-      {
-        id: "inv-2",
-        correo: "netflix.cuenta2@gmail.com",
-        contraseña: "nfSec2025",
-        perfiles: [
-          { numero: 1, pin: "111111", estado: "disponible" },
-          { numero: 2, pin: "222222", estado: "disponible" },
-          { numero: 3, pin: "333333", estado: "disponible" },
-          { numero: 4, pin: "444444", estado: "disponible" },
-          { numero: 5, pin: "555555", estado: "disponible" },
-          { numero: 6, pin: "666666", estado: "disponible" },
-        ],
-      },
-    ],
-  },
-  {
-    plataforma: "Crunchyroll",
-    cuentas: [
-      {
-        id: "inv-3",
-        correo: "crunchy.cuenta1@outlook.com",
-        contraseña: "crPass2025",
-        perfiles: [
-          { numero: 1, pin: "1111", estado: "disponible" },
-          { numero: 2, pin: "2222", estado: "ocupado", clienteCorreo: "test@test.com", fechaAsignacion: "08/02/2025", fechaExpiracion: "10/03/2025" },
-          { numero: 3, pin: "3333", estado: "disponible" },
-          { numero: 4, pin: "4444", estado: "disponible" },
-          { numero: 5, pin: "5555", estado: "disponible" },
-          { numero: 6, pin: "6666", estado: "disponible" },
-        ],
-      },
-    ],
-  },
-  {
-    plataforma: "Disney+",
-    cuentas: [
-      {
-        id: "inv-4",
-        correo: "disney.cuenta1@yahoo.com",
-        contraseña: "dpPass2025",
-        perfiles: [
-          { numero: 1, pin: "100100", estado: "disponible" },
-          { numero: 2, pin: "200200", estado: "disponible" },
-          { numero: 3, pin: "300300", estado: "ocupado", clienteCorreo: "test@test.com", fechaAsignacion: "15/01/2025", fechaExpiracion: "14/02/2025" },
-          { numero: 4, pin: "400400", estado: "disponible" },
-          { numero: 5, pin: "500500", estado: "disponible" },
-          { numero: 6, pin: "600600", estado: "disponible" },
-        ],
-      },
-    ],
-  },
-];
+const INVENTARIO_INICIAL: InventarioPlataforma[] = [];
 
 export function getInventario(): InventarioPlataforma[] {
   return getFromStorage(STORAGE_INVENTARIO, INVENTARIO_INICIAL);

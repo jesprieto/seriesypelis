@@ -4,9 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import {
   getInventario,
   agregarCuentaAlInventario,
-  getInventario as refreshInventario,
   setInventario,
-} from "@/lib/mockData";
+} from "@/lib/data";
 import type { InventarioPlataforma, CuentaPlataforma, Perfil } from "@/lib/mockData";
 import { ChevronDown, ChevronRight, Plus, Upload, Pencil, Search } from "lucide-react";
 
@@ -41,7 +40,10 @@ export default function AccesosTab() {
   const [busquedaCorreo, setBusquedaCorreo] = useState("");
   const csvRef = useRef<HTMLInputElement>(null);
 
-  const refresh = () => setInventarioState(getInventario());
+  const refresh = async () => {
+    const data = await getInventario();
+    setInventarioState(data);
+  };
 
   useEffect(() => {
     refresh();
@@ -51,7 +53,7 @@ export default function AccesosTab() {
     setExpandido((prev) => (prev === plataforma ? null : plataforma));
   };
 
-  const handleAgregarCuenta = (e: React.FormEvent) => {
+  const handleAgregarCuenta = async (e: React.FormEvent) => {
     e.preventDefault();
     setMensaje(null);
     if (!formPlataforma.trim()) {
@@ -74,13 +76,13 @@ export default function AccesosTab() {
       contraseña: formContraseña.trim(),
       perfiles: crearPerfilesVacios(formPins),
     };
-    agregarCuentaAlInventario(formPlataforma.trim(), cuenta);
+    await agregarCuentaAlInventario(formPlataforma.trim(), cuenta);
 
     setFormCorreo("");
     setFormContraseña("");
     setFormPins(["", "", "", "", "", ""]);
     setMensaje({ tipo: "ok", text: "Cuenta agregada correctamente" });
-    refresh();
+    await refresh();
   };
 
   const handleEditarCuenta = (plataforma: string, cuenta: CuentaPlataforma) => {
@@ -94,7 +96,7 @@ export default function AccesosTab() {
     setEditPins(pins);
   };
 
-  const handleGuardarEdicion = (e: React.FormEvent) => {
+  const handleGuardarEdicion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editandoCuenta) return;
     if (!editCorreo.trim() || !editContraseña.trim()) {
@@ -107,7 +109,7 @@ export default function AccesosTab() {
       return;
     }
 
-    const inv = getInventario();
+    const inv = await getInventario();
     const platIdx = inv.findIndex(
       (p) => p.plataforma.toLowerCase() === editandoCuenta.plataforma.toLowerCase()
     );
@@ -142,17 +144,17 @@ export default function AccesosTab() {
         i === cuentaIdx ? cuentaActualizada : c
       ),
     };
-    setInventario(invActualizado);
+    await setInventario(invActualizado);
     setMensaje({ tipo: "ok", text: "Cuenta actualizada correctamente" });
     setEditandoCuenta(null);
-    refresh();
+    await refresh();
   };
 
   const handleCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       const text = ev.target?.result as string;
       if (!text) return;
       const lines = text.split(/\r?\n/).filter((l) => l.trim());
@@ -174,11 +176,11 @@ export default function AccesosTab() {
           contraseña,
           perfiles: crearPerfilesVacios(pinsArr),
         };
-        agregarCuentaAlInventario(plataforma, cuenta);
+        await agregarCuentaAlInventario(plataforma, cuenta);
         added++;
       }
       setMensaje({ tipo: "ok", text: `${added} cuenta(s) importada(s) desde CSV` });
-      refresh();
+      await refresh();
     };
     reader.readAsText(file);
     if (csvRef.current) csvRef.current.value = "";
