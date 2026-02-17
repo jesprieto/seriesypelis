@@ -143,6 +143,8 @@ export default function ClienteModal({
                     </div>
                     {cliente.historialCompras.map((c: Compra, i: number) => {
                       const activa = esCompraDisponible(c);
+                      const suspendido = c.estado === "Suspendido";
+                      const muestraDatos = !suspendido;
                       return (
                         <div
                           key={`${c.codigo}-${i}`}
@@ -152,14 +154,14 @@ export default function ClienteModal({
                         >
                         <span className="text-gray-600 text-left text-xs whitespace-nowrap">{c.fechaCompra}</span>
                       <span className="font-medium text-gray-800 text-center">{c.plataforma}</span>
-                      <span className="text-gray-600 text-center text-sm truncate" title={c.correo ?? "-"}>
-                        {c.correo ?? "-"}
+                      <span className="text-gray-600 text-center text-sm truncate" title={muestraDatos ? (c.correo ?? "-") : ""}>
+                        {muestraDatos ? (c.correo ?? "-") : "—"}
                       </span>
-                      <span className="text-gray-600 text-center text-sm truncate" title={c.contraseña ?? "-"}>
-                        {c.contraseña ?? "-"}
+                      <span className="text-gray-600 text-center text-sm truncate" title={muestraDatos ? (c.contraseña ?? "-") : ""}>
+                        {muestraDatos ? (c.contraseña ?? "-") : "—"}
                       </span>
                       <span className="text-gray-700 text-center font-medium">
-                        {c.perfil ?? "-"}
+                        {muestraDatos ? (c.perfil ?? "-") : "—"}
                       </span>
                       <span className="font-semibold text-gray-900 text-center">
                         {formatValor(c.valorCompra)}
@@ -167,10 +169,10 @@ export default function ClienteModal({
                       <span className="text-center">
                         <span
                           className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                            activa ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                            suspendido ? "bg-amber-100 text-amber-800" : activa ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                           }`}
                         >
-                          {activa ? "Activa" : "Expirada"}
+                          {suspendido ? "Suspendido" : activa ? "Activa" : "Expirada"}
                         </span>
                       </span>
                       </div>

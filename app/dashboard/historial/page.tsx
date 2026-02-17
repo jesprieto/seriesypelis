@@ -8,7 +8,12 @@ import { esCompraDisponible } from "@/lib/utils";
 import type { Compra } from "@/lib/mockData";
 
 function estadoCalculado(compra: Compra): Compra["estado"] {
+  if (compra.estado === "Suspendido") return "Suspendido";
   return esCompraDisponible(compra) ? "Disponible" : "Expirado";
+}
+
+function compraMuestraDatosAcceso(compra: Compra): boolean {
+  return compra.estado !== "Suspendido";
 }
 
 export default function HistorialPage() {
@@ -104,7 +109,9 @@ export default function HistorialPage() {
                         className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
                           compra.estado === "Disponible"
                             ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
+                            : compra.estado === "Suspendido"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-red-100 text-red-800"
                         }`}
                       >
                         {compra.estado}
@@ -116,28 +123,32 @@ export default function HistorialPage() {
                     <td className="py-3 px-4 text-sm text-gray-600">
                       {truncate(compra.plataforma, 20)}
                     </td>
-                    <td className="py-3 px-4 text-sm text-gray-600 truncate max-w-[160px]" title={compra.correo ?? "-"}>
-                      {compra.correo ?? "-"}
+                    <td className="py-3 px-4 text-sm text-gray-600 truncate max-w-[160px]" title={compraMuestraDatosAcceso(compra) ? (compra.correo ?? "-") : ""}>
+                      {compraMuestraDatosAcceso(compra) ? (compra.correo ?? "-") : "—"}
                     </td>
-                    <td className="py-3 px-4 text-sm text-gray-600 font-mono truncate max-w-[120px]" title={compra.contraseña ?? "-"}>
-                      {compra.contraseña ?? "-"}
+                    <td className="py-3 px-4 text-sm text-gray-600 font-mono truncate max-w-[120px]" title={compraMuestraDatosAcceso(compra) ? (compra.contraseña ?? "-") : ""}>
+                      {compraMuestraDatosAcceso(compra) ? (compra.contraseña ?? "-") : "—"}
                     </td>
                     <td className="py-3 px-4 text-sm font-medium text-gray-900 text-center">
-                      {compra.perfil ?? "-"}
+                      {compraMuestraDatosAcceso(compra) ? (compra.perfil ?? "-") : "—"}
                     </td>
                     <td className="py-3 px-4 text-sm font-medium text-gray-900 text-right">
                       {formatValor(compra.valorCompra)}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <button
-                        onClick={() => {
-                          setCompraSeleccionada(compra);
-                          setModalAccesoOpen(true);
-                        }}
-                        className="inline-flex px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-orange-500 hover:bg-orange-600 transition-colors whitespace-nowrap"
-                      >
-                        Ver acceso
-                      </button>
+                      {compraMuestraDatosAcceso(compra) ? (
+                        <button
+                          onClick={() => {
+                            setCompraSeleccionada(compra);
+                            setModalAccesoOpen(true);
+                          }}
+                          className="inline-flex px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-orange-500 hover:bg-orange-600 transition-colors whitespace-nowrap"
+                        >
+                          Ver acceso
+                        </button>
+                      ) : (
+                        <span className="text-xs text-gray-500">—</span>
+                      )}
                     </td>
                   </tr>
                 ))

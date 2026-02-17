@@ -122,6 +122,37 @@ export async function ensureInventarioPlataformaExists(plataforma: string): Prom
   }
 }
 
+export async function correoYaExisteEnPlataforma(
+  plataforma: string,
+  correo: string
+): Promise<boolean> {
+  const nombreNorm = normalizarPlataforma(plataforma);
+  if (isSupabaseConfigured()) {
+    return db.correoYaExisteEnPlataformaEnSupabase(nombreNorm, correo);
+  }
+  return mock.correoYaExisteEnPlataforma(nombreNorm, correo);
+}
+
+export async function liberarPerfil(
+  plataforma: string,
+  cuentaId: string,
+  cuentaCorreo: string,
+  numeroPerfil: number,
+  clienteCorreo: string
+): Promise<boolean> {
+  const nombreNorm = normalizarPlataforma(plataforma);
+  if (isSupabaseConfigured()) {
+    return db.liberarPerfilInSupabase(
+      nombreNorm,
+      cuentaId,
+      cuentaCorreo,
+      numeroPerfil,
+      clienteCorreo
+    );
+  }
+  return mock.liberarPerfilOcupado(nombreNorm, cuentaId, cuentaCorreo, numeroPerfil);
+}
+
 export async function agregarCuentaAlInventario(
   plataforma: string,
   cuenta: CuentaPlataforma

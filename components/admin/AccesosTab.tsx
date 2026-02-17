@@ -5,6 +5,8 @@ import {
   getInventario,
   agregarCuentaAlInventario,
   setInventario,
+  correoYaExisteEnPlataforma,
+  liberarPerfil,
 } from "@/lib/data";
 import { PLATAFORMAS_OFICIALES, normalizarPlataforma } from "@/lib/plataformas";
 import type { InventarioPlataforma, CuentaPlataforma, Perfil } from "@/lib/mockData";
@@ -43,6 +45,7 @@ export default function AccesosTab() {
   const [busquedaCorreo, setBusquedaCorreo] = useState("");
   const [guardandoCuenta, setGuardandoCuenta] = useState(false);
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+  const [cambiandoEstado, setCambiandoEstado] = useState<string | null>(null);
   const csvRef = useRef<HTMLInputElement>(null);
 
   const refresh = async () => {
@@ -78,6 +81,12 @@ export default function AccesosTab() {
     const pinsValidos = formPins.filter((p) => p.trim() !== "");
     if (pinsValidos.length === 0) {
       setMensaje({ tipo: "error", text: "Agrega al menos un pin de perfil" });
+      return;
+    }
+
+    const yaExiste = await correoYaExisteEnPlataforma(formPlataforma.trim(), formCorreo.trim());
+    if (yaExiste) {
+      setMensaje({ tipo: "error", text: "Ese correo ya existe en esta plataforma." });
       return;
     }
 
@@ -124,6 +133,16 @@ export default function AccesosTab() {
     if (pinsValidos.length === 0) {
       setMensaje({ tipo: "error", text: "Debe haber al menos un perfil con pin" });
       return;
+    }
+
+    const correoNuevo = editCorreo.trim().toLowerCase();
+    const correoActual = editandoCuenta.cuenta.correo.trim().toLowerCase();
+    if (correoNuevo !== correoActual) {
+      const yaExiste = await correoYaExisteEnPlataforma(editandoCuenta.plataforma, editCorreo.trim());
+      if (yaExiste) {
+        setMensaje({ tipo: "error", text: "Ese correo ya existe en esta plataforma." });
+        return;
+      }
     }
 
     setGuardandoEdicion(true);
@@ -194,6 +213,8 @@ export default function AccesosTab() {
         if (!PLATAFORMAS_OFICIALES.includes(plataforma as (typeof PLATAFORMAS_OFICIALES)[number])) continue;
         const pinsArr = pins.slice(0, 6);
         if (pinsArr.filter((p) => p).length === 0) continue;
+        const yaExiste = await correoYaExisteEnPlataforma(plataforma, correo);
+        if (yaExiste) continue;
         const cuenta: CuentaPlataforma = {
           id: `inv-csv-${Date.now()}-${i}`,
           correo,
@@ -208,6 +229,40 @@ export default function AccesosTab() {
     };
     reader.readAsText(file);
     if (csvRef.current) csvRef.current.value = "";
+  };
+
+  const handleCambiarEstadoPerfil = async (
+    plataforma: string,
+    cuenta: CuentaPlataforma,
+    perfil: Perfil,
+    nuevoEstado: "disponible" | "ocupado"
+  ) => {
+    if (perfil.estado === nuevoEstado) return;
+    if (nuevoEstado === "ocupado") {
+      setMensaje({ tipo: "error", text: "Para marcar como ocupado debe asignarse desde una compra." });
+      return;
+    }
+    if (perfil.estado !== "ocupado" || !perfil.clienteCorreo) return;
+    const key = `${plataforma}-${cuenta.id}-${perfil.numero}`;
+    setCambiandoEstado(key);
+    setMensaje(null);
+    try {
+      const ok = await liberarPerfil(
+        plataforma,
+        cuenta.id,
+        cuenta.correo,
+        perfil.numero,
+        perfil.clienteCorreo
+      );
+      if (ok) {
+        setMensaje({ tipo: "ok", text: "Perfil liberado. Los datos de acceso ya no serán visibles para el usuario." });
+        await refresh();
+      } else {
+        setMensaje({ tipo: "error", text: "No se pudo liberar el perfil." });
+      }
+    } finally {
+      setCambiandoEstado(null);
+    }
   };
 
   const busquedaLower = busquedaCorreo.trim().toLowerCase();
@@ -446,32 +501,45 @@ export default function AccesosTab() {
                               </tr>
                             </thead>
                             <tbody>
-                              {cuenta.perfiles.map((perfil) => (
-                                <tr
-                                  key={`${cuenta.id}-${perfil.numero}`}
-                                  className="border-t border-gray-100"
-                                >
-                                  <td className="py-2 px-3 text-sm text-gray-700 text-center">{perfil.numero}</td>
-                                  <td className="py-2 px-3 text-sm font-mono text-gray-900 text-center">{perfil.pin}</td>
-                                  <td className="py-2 px-3 text-center">
-                                    <span
-                                      className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                                        perfil.estado === "disponible"
-                                          ? "bg-green-100 text-green-800"
-                                          : "bg-red-100 text-red-800"
-                                      }`}
-                                    >
-                                      {perfil.estado === "disponible" ? "Disponible" : "Ocupado"}
-                                    </span>
-                                  </td>
-                                  <td className="py-2 px-3 text-sm text-gray-600">
-                                    {perfil.clienteCorreo ?? "-"}
-                                  </td>
-                                  <td className="py-2 px-3 text-sm text-gray-600 text-center">
-                                    {perfil.fechaExpiracion ?? "-"}
-                                  </td>
-                                </tr>
-                              ))}
+                              {cuenta.perfiles.map((perfil) => {
+                                const estadoKey = `${plat.plataforma}-${cuenta.id}-${perfil.numero}`;
+                                const isChanging = cambiandoEstado === estadoKey;
+                                return (
+                                  <tr
+                                    key={`${cuenta.id}-${perfil.numero}`}
+                                    className="border-t border-gray-100"
+                                  >
+                                    <td className="py-2 px-3 text-sm text-gray-700 text-center">{perfil.numero}</td>
+                                    <td className="py-2 px-3 text-sm font-mono text-gray-900 text-center">{perfil.pin}</td>
+                                    <td className="py-2 px-3 text-center">
+                                      <select
+                                        value={perfil.estado}
+                                        disabled={isChanging}
+                                        onChange={(e) => {
+                                          const val = e.target.value as "disponible" | "ocupado";
+                                          if (val === "disponible" && perfil.estado === "ocupado") {
+                                            handleCambiarEstadoPerfil(plat.plataforma, cuenta, perfil, "disponible");
+                                          }
+                                        }}
+                                        className={`text-xs font-medium rounded-full border-0 py-1 px-2 cursor-pointer focus:ring-2 focus:ring-orange-400/50 ${
+                                          perfil.estado === "disponible"
+                                            ? "bg-green-100 text-green-800"
+                                            : "bg-red-100 text-red-800"
+                                        } disabled:opacity-70 disabled:cursor-not-allowed`}
+                                      >
+                                        <option value="disponible">Disponible</option>
+                                        <option value="ocupado">Ocupado</option>
+                                      </select>
+                                    </td>
+                                    <td className="py-2 px-3 text-sm text-gray-600">
+                                      {perfil.clienteCorreo ?? "-"}
+                                    </td>
+                                    <td className="py-2 px-3 text-sm text-gray-600 text-center">
+                                      {perfil.fechaExpiracion ?? "-"}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>

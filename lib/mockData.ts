@@ -5,7 +5,7 @@ export interface Plan {
   imagen?: string;
 }
 
-export type EstadoCompra = "Disponible" | "Expirado";
+export type EstadoCompra = "Disponible" | "Expirado" | "Suspendido";
 
 export interface Compra {
   codigo: string;
@@ -247,6 +247,18 @@ export function ensureInventarioPlataformaExists(plataforma: string): void {
   }
 }
 
+/** Devuelve true si ya existe una cuenta con ese correo en la plataforma (mismo correo = no permitido). */
+export function correoYaExisteEnPlataforma(plataforma: string, correo: string): boolean {
+  const inv = getInventario();
+  const plat = inv.find(
+    (i) => i.plataforma.toLowerCase() === plataforma.toLowerCase()
+  );
+  if (!plat) return false;
+  return plat.cuentas.some(
+    (c) => c.correo.trim().toLowerCase() === correo.trim().toLowerCase()
+  );
+}
+
 export function agregarCuentaAlInventario(
   plataforma: string,
   cuenta: CuentaPlataforma
@@ -325,6 +337,63 @@ export function contarPerfilesDisponibles(plataforma: string): number {
     }
   }
   return count;
+}
+
+/**
+ * Cambia un perfil de ocupado a disponible: limpia cliente asignado en inventario,
+ * pone la compra correspondiente del usuario en estado Suspendido y oculta sus datos.
+ */
+export function liberarPerfilOcupado(
+  plataforma: string,
+  cuentaId: string,
+  cuentaCorreo: string,
+  numeroPerfil: number
+): boolean {
+  const inv = getInventario();
+  const plat = inv.find(
+    (i) => i.plataforma.toLowerCase() === plataforma.toLowerCase()
+  );
+  if (!plat) return false;
+  const cuenta = plat.cuentas.find((c) => c.id === cuentaId);
+  if (!cuenta) return false;
+  const perfil = cuenta.perfiles.find((p) => p.numero === numeroPerfil);
+  if (!perfil || perfil.estado !== "ocupado" || !perfil.clienteCorreo) return false;
+
+  const clienteCorreo = perfil.clienteCorreo;
+
+  perfil.estado = "disponible";
+  perfil.clienteCorreo = undefined;
+  perfil.fechaAsignacion = undefined;
+  perfil.fechaExpiracion = undefined;
+  setInventario(inv);
+
+  const clientes = getClientes();
+  const idxCliente = clientes.findIndex(
+    (c) => c.correo.toLowerCase() === clienteCorreo.toLowerCase()
+  );
+  if (idxCliente >= 0) {
+    const cliente = clientes[idxCliente];
+    const historial = cliente.historialCompras.map((comp) => {
+      const coincide =
+        comp.plataforma.toLowerCase() === plataforma.toLowerCase() &&
+        (comp.correo ?? "").toLowerCase() === cuentaCorreo.toLowerCase() &&
+        comp.perfil === numeroPerfil;
+      if (!coincide) return comp;
+      return {
+        ...comp,
+        estado: "Suspendido" as const,
+        correo: undefined,
+        contraseña: undefined,
+        perfil: undefined,
+        pin: undefined,
+      };
+    });
+    const clienteActualizado = { ...cliente, historialCompras: historial };
+    const updated = [...clientes];
+    updated[idxCliente] = clienteActualizado;
+    setClientes(updated);
+  }
+  return true;
 }
 
 export const ADMIN_USUARIO = "admin";

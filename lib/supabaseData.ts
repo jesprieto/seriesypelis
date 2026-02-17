@@ -264,6 +264,21 @@ export async function ensureInventarioPlataformaExistsInSupabase(plataforma: str
   }
 }
 
+export async function correoYaExisteEnPlataformaEnSupabase(
+  plataforma: string,
+  correo: string
+): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  const inv = await getInventarioFromSupabase();
+  const nombreBuscado = normalizarPlataforma(plataforma);
+  const plat = inv.find((i) => normalizarPlataforma(i.plataforma) === nombreBuscado);
+  if (!plat) return false;
+  const correoLower = correo.trim().toLowerCase();
+  return plat.cuentas.some(
+    (c) => c.correo.trim().toLowerCase() === correoLower
+  );
+}
+
 export async function agregarCuentaAlInventarioInSupabase(
   plataforma: string,
   cuenta: CuentaPlataforma
@@ -277,6 +292,52 @@ export async function agregarCuentaAlInventarioInSupabase(
   }
   plat.cuentas.push(cuenta);
   await setInventarioInSupabase(inv);
+}
+
+export async function liberarPerfilInSupabase(
+  plataforma: string,
+  cuentaId: string,
+  cuentaCorreo: string,
+  numeroPerfil: number,
+  clienteCorreo: string
+): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  const nombrePlat = normalizarPlataforma(plataforma);
+
+  const { error: errPerfil } = await supabase
+    .from("perfiles")
+    .update({
+      estado: "disponible",
+      cliente_correo: null,
+      fecha_asignacion: null,
+      fecha_expiracion: null,
+    })
+    .eq("cuenta_plataforma_id", cuentaId)
+    .eq("numero", numeroPerfil);
+
+  if (errPerfil) {
+    console.error("liberarPerfil update perfiles:", errPerfil);
+    return false;
+  }
+
+  const { error: errCompra } = await supabase
+    .from("compras")
+    .update({
+      estado: "Suspendido",
+      correo: null,
+      contraseña: null,
+      perfil: null,
+      pin: null,
+    })
+    .eq("cliente_correo", clienteCorreo)
+    .eq("plataforma", nombrePlat)
+    .eq("correo", cuentaCorreo)
+    .eq("perfil", numeroPerfil);
+
+  if (errCompra) {
+    console.error("liberarPerfil update compras:", errCompra);
+  }
+  return true;
 }
 
 export async function asignarPerfilDisponibleInSupabase(
