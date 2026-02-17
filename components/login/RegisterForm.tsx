@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, Mail, Phone, Lock } from "lucide-react";
-import { registrarCliente } from "@/lib/mockData";
+import { registrarCliente } from "@/lib/data";
 import LoginLogo from "./LoginLogo";
 
 export default function RegisterForm() {
@@ -17,7 +17,7 @@ export default function RegisterForm() {
   const [error, setError] = useState("");
   const [exitoso, setExitoso] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (!nombre.trim()) {
@@ -41,7 +41,7 @@ export default function RegisterForm() {
       return;
     }
 
-    const resultado = registrarCliente({
+    const resultado = await registrarCliente({
       nombre: nombre.trim(),
       correo: correo.trim(),
       contraseña,

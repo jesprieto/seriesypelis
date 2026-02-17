@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Plan, contarPerfilesDisponibles } from "@/lib/mockData";
+import { Plan } from "@/lib/mockData";
+import { contarPerfilesDisponibles } from "@/lib/data";
 import PurchaseModal from "./PurchaseModal";
 
 interface PlanCardProps {
@@ -11,7 +12,10 @@ interface PlanCardProps {
 
 export default function PlanCard({ plan }: PlanCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
-  const perfilesDisponibles = contarPerfilesDisponibles(plan.nombre);
+  const [perfilesDisponibles, setPerfilesDisponibles] = useState(0);
+  useEffect(() => {
+    contarPerfilesDisponibles(plan.nombre).then(setPerfilesDisponibles);
+  }, [plan.nombre]);
   const agotado = perfilesDisponibles === 0;
 
   const formattedPrecio = new Intl.NumberFormat("es-CO", {

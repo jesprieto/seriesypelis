@@ -3,33 +3,36 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import HeaderCards from "@/components/dashboard/HeaderCards";
-import { getAvatarParaCliente, getClienteByCorreo } from "@/lib/mockData";
+import { getAvatarParaCliente, getClienteByCorreo } from "@/lib/data";
+import type { Cliente } from "@/lib/mockData";
 
 export default function ConfiguracionPage() {
-  const { saldo, historialCompras, user, nombrePerfil, avatarEmoji, updatePerfil } = useAuth();
+  const { saldo, historialCompras, user, nombrePerfil, avatarEmoji, updatePerfil, refreshCliente } = useAuth();
   const [nombre, setNombre] = useState("");
+  const [cliente, setCliente] = useState<Cliente | null>(null);
   useEffect(() => {
-    if (user || nombrePerfil) {
-      setNombre(
-        nombrePerfil ??
-          getClienteByCorreo(user ?? "")?.nombre ??
-          user?.split("@")[0] ??
-          ""
-      );
+    if (user) {
+      getClienteByCorreo(user).then((c) => {
+        setCliente(c ?? null);
+        if (!nombrePerfil && c) setNombre(c.nombre);
+        else if (!nombrePerfil && !c) setNombre(user?.split("@")[0] ?? "");
+      });
     }
-  }, [user, nombrePerfil]);
+  }, [user]);
+  useEffect(() => {
+    if (nombrePerfil) setNombre(nombrePerfil);
+  }, [nombrePerfil]);
   const [contraseñaActual, setContraseñaActual] = useState("");
   const [nuevaContraseña, setNuevaContraseña] = useState("");
   const [confirmarContraseña, setConfirmarContraseña] = useState("");
   const [mensaje, setMensaje] = useState<{ tipo: "ok" | "error"; text: string } | null>(null);
-  const cliente = user ? getClienteByCorreo(user) : null;
   const avatar = avatarEmoji ?? (cliente ? getAvatarParaCliente(cliente.id).emoji : "🙂");
   const avatarColor = cliente ? getAvatarParaCliente(cliente.id).color : "bg-orange-100";
 
-  const handleSubmitNombre = (e: React.FormEvent) => {
+  const handleSubmitNombre = async (e: React.FormEvent) => {
     e.preventDefault();
     setMensaje(null);
-    const r = updatePerfil({ nombre: nombre.trim() || undefined });
+    const r = await updatePerfil({ nombre: nombre.trim() || undefined });
     if (r.ok) {
       setMensaje({ tipo: "ok", text: "Nombre actualizado" });
     } else {
@@ -37,14 +40,14 @@ export default function ConfiguracionPage() {
     }
   };
 
-  const handleSubmitContraseña = (e: React.FormEvent) => {
+  const handleSubmitContraseña = async (e: React.FormEvent) => {
     e.preventDefault();
     setMensaje(null);
     if (nuevaContraseña !== confirmarContraseña) {
       setMensaje({ tipo: "error", text: "Las contraseñas no coinciden" });
       return;
     }
-    const r = updatePerfil({
+    const r = await updatePerfil({
       contraseñaActual,
       nuevaContraseña,
     });
@@ -64,7 +67,7 @@ export default function ConfiguracionPage() {
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
           Configuración
         </h1>
-        <HeaderCards historialCompras={historialCompras} saldo={saldo} />
+        <HeaderCards historialCompras={historialCompras} saldo={saldo} onRefresh={refreshCliente} />
       </div>
 
       <div className="max-w-xl space-y-6">

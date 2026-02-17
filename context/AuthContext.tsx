@@ -3,13 +3,18 @@
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from "react";
 import {
   DEFAULT_SALDO,
-  getClienteByCorreo,
   getClientes,
   setClientes,
-  actualizarCliente,
-  asignarPerfilDisponible,
   getAvatarParaCliente,
 } from "@/lib/mockData";
+import {
+  getClienteByCorreo,
+  actualizarCliente,
+  asignarPerfilDisponible as asignarPerfilData,
+  insertarCompra,
+  registrarCliente,
+} from "@/lib/data";
+import { isSupabaseConfigured } from "@/lib/supabase";
 import type { Compra, Plan } from "@/lib/mockData";
 
 const STORAGE_KEY = "pelis-series-auth";
@@ -47,8 +52,9 @@ interface AuthContextType extends AuthState {
   isLoading: boolean;
   login: (correo: string, clave: string) => void;
   logout: () => void;
-  comprarPlan: (plan: Plan) => Compra | null;
-  updatePerfil: (opciones: { nombre?: string; contraseñaActual?: string; nuevaContraseña?: string }) => { ok: boolean; error?: string };
+  comprarPlan: (plan: Plan) => Promise<Compra | null>;
+  updatePerfil: (opciones: { nombre?: string; contraseñaActual?: string; nuevaContraseña?: string }) => Promise<{ ok: boolean; error?: string }>;
+  refreshCliente: () => Promise<void>;
 }
 
 const initialState: AuthState = {
@@ -113,31 +119,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state, mounted]);
 
+  const refreshCliente = async () => {
+    if (!state.user) return;
+    const cliente = await getClienteByCorreo(state.user);
+    if (cliente) {
+      setState((prev) => ({
+        ...prev,
+        saldo: cliente.saldo,
+        historialCompras: cliente.historialCompras,
+        avatarEmoji: cliente.avatarEmoji ?? prev.avatarEmoji,
+      }));
+    }
+  };
+
   useEffect(() => {
     if (!mounted || !state.isAuthenticated || !state.user) return;
-    const syncFromDb = () => {
-      const cliente = getClienteByCorreo(state.user!);
-      if (cliente) {
-        setState((prev) => ({
-          ...prev,
-          saldo: cliente.saldo,
-          historialCompras: cliente.historialCompras,
-          avatarEmoji: cliente.avatarEmoji ?? prev.avatarEmoji,
-        }));
-      }
-    };
-    window.addEventListener("focus", syncFromDb);
-    return () => window.removeEventListener("focus", syncFromDb);
+    const onFocus = () => refreshCliente();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, [mounted, state.isAuthenticated, state.user]);
 
-  const login = (correo: string, clave: string) => {
+  const login = async (correo: string, clave: string) => {
     if (!correo.trim() || !clave.trim()) return;
     const correoTrim = correo.trim();
-    const cliente = getClienteByCorreo(correoTrim);
+    const cliente = await getClienteByCorreo(correoTrim);
     if (cliente) {
       const avatar = cliente.avatarEmoji ?? getAvatarParaCliente(cliente.id).emoji;
       if (!cliente.avatarEmoji) {
-        actualizarCliente(correoTrim, (c) => ({ ...c, avatarEmoji: avatar }));
+        await actualizarCliente(correoTrim, (c) => ({ ...c, avatarEmoji: avatar }));
       }
       let savedNombre: string | null = null;
       if (typeof window !== "undefined") {
@@ -158,16 +167,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       const newId = String(Date.now());
       const { emoji } = getAvatarParaCliente(newId);
-      const newCliente = {
-        id: newId,
-        nombre: correoTrim.split("@")[0] || "Usuario",
-        correo: correoTrim,
-        contraseña: clave,
-        avatarEmoji: emoji,
-        saldo: DEFAULT_SALDO,
-        historialCompras: [] as Compra[],
-      };
-      setClientes([...getClientes(), newCliente]);
+      const nombre = correoTrim.split("@")[0] || "Usuario";
+      if (isSupabaseConfigured()) {
+        const res = await registrarCliente({ nombre, correo: correoTrim, contraseña: clave });
+        if (!res.ok) return;
+      } else {
+        const newCliente = {
+          id: newId,
+          nombre,
+          correo: correoTrim,
+          contraseña: clave,
+          avatarEmoji: emoji,
+          saldo: DEFAULT_SALDO,
+          historialCompras: [] as Compra[],
+        };
+        setClientes([...getClientes(), newCliente]);
+      }
       setState({
         user: correoTrim,
         saldo: DEFAULT_SALDO,
@@ -183,13 +198,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState(initialState);
   };
 
-  const comprarPlan = (plan: Plan): Compra | null => {
+  const comprarPlan = async (plan: Plan): Promise<Compra | null> => {
     if (state.saldo < plan.precio) return null;
 
-    const asignado = asignarPerfilDisponible(
-      plan.nombre,
-      state.user || "desconocido"
-    );
+    const asignado = await asignarPerfilData(plan.nombre, state.user || "desconocido");
     if (!asignado) return null;
 
     const now = new Date();
@@ -214,20 +226,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       historialCompras: [nuevaCompra, ...prev.historialCompras],
     }));
     if (state.user) {
-      actualizarCliente(state.user, (c) => ({
+      await actualizarCliente(state.user, (c) => ({
         ...c,
         saldo: c.saldo - plan.precio,
         historialCompras: [nuevaCompra, ...c.historialCompras],
       }));
+      await insertarCompra(state.user, nuevaCompra);
     }
     return nuevaCompra;
   };
 
-  const updatePerfil = (opciones: {
+  const updatePerfil = async (opciones: {
     nombre?: string;
     contraseñaActual?: string;
     nuevaContraseña?: string;
-  }): { ok: boolean; error?: string } => {
+  }): Promise<{ ok: boolean; error?: string }> => {
     if (!state.user) return { ok: false, error: "No hay sesión activa" };
     if (opciones.nombre !== undefined) {
       const val = opciones.nombre?.trim() || null;
@@ -241,7 +254,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!opciones.contraseñaActual || !opciones.nuevaContraseña) {
         return { ok: false, error: "Contraseña actual y nueva son requeridas" };
       }
-      const cliente = getClienteByCorreo(state.user);
+      const cliente = await getClienteByCorreo(state.user);
       if (!cliente) return { ok: false, error: "Cliente no encontrado" };
       if (cliente.contraseña !== opciones.contraseñaActual) {
         return { ok: false, error: "La contraseña actual no es correcta" };
@@ -249,13 +262,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (opciones.nuevaContraseña.length < 4) {
         return { ok: false, error: "La nueva contraseña debe tener al menos 4 caracteres" };
       }
-      actualizarCliente(state.user, (c) => ({
+      await actualizarCliente(state.user, (c) => ({
         ...c,
         contraseña: opciones.nuevaContraseña!,
       }));
     }
     return { ok: true };
   };
+
+  useEffect(() => {
+    if (mounted && state.isAuthenticated && state.user && isSupabaseConfigured()) {
+      refreshCliente();
+    }
+  }, [mounted, state.isAuthenticated, state.user]);
 
   return (
     <AuthContext.Provider
@@ -266,6 +285,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         comprarPlan,
         updatePerfil,
+        refreshCliente,
       }}
     >
       {children}

@@ -1,11 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  getClientes,
-  actualizarCliente,
-  getClienteByCorreo,
-} from "@/lib/mockData";
+import { getClientes, actualizarCliente, getClienteByCorreo } from "@/lib/data";
 import type { Cliente } from "@/lib/mockData";
 import { getPlataformasActivas } from "@/lib/utils";
 import ClienteModal from "./ClienteModal";
@@ -15,7 +11,10 @@ export default function ClientesTab() {
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const refresh = () => setClientesState(getClientes());
+  const refresh = async () => {
+    const data = await getClientes();
+    setClientesState(data);
+  };
 
   useEffect(() => {
     refresh();
@@ -29,8 +28,9 @@ export default function ClientesTab() {
       maximumFractionDigits: 0,
     }).format(valor);
 
-  const handleAbrir = (c: Cliente) => {
-    setSelectedCliente(getClienteByCorreo(c.correo) ?? c);
+  const handleAbrir = async (c: Cliente) => {
+    const actual = await getClienteByCorreo(c.correo);
+    setSelectedCliente(actual ?? c);
     setModalOpen(true);
   };
 
@@ -40,12 +40,12 @@ export default function ClientesTab() {
     refresh();
   };
 
-  const handleAgregarSaldo = (correo: string, monto: number) => {
-    actualizarCliente(correo, (c) => ({
+  const handleAgregarSaldo = async (correo: string, monto: number) => {
+    await actualizarCliente(correo, (c) => ({
       ...c,
       saldo: c.saldo + monto,
     }));
-    const updated = getClienteByCorreo(correo);
+    const updated = await getClienteByCorreo(correo);
     if (updated) setSelectedCliente(updated);
     refresh();
   };

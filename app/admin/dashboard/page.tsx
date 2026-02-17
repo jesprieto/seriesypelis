@@ -8,8 +8,9 @@ import { LogOut, LayoutDashboard } from "lucide-react";
 import CrearPlataformaTab from "@/components/admin/CrearPlataformaTab";
 import ClientesTab from "@/components/admin/ClientesTab";
 import AccesosTab from "@/components/admin/AccesosTab";
+import MigracionTab from "@/components/admin/MigracionTab";
 
-type TabId = "plataformas" | "clientes" | "accesos";
+type TabId = "plataformas" | "clientes" | "accesos" | "migracion";
 
 export default function AdminDashboardPage() {
   const { isAdmin, isLoading, logout } = useAdmin();
@@ -41,6 +42,7 @@ export default function AdminDashboardPage() {
     { id: "plataformas" as const, label: "Crear plataforma" },
     { id: "clientes" as const, label: "Clientes" },
     { id: "accesos" as const, label: "Accesos" },
+    { id: "migracion" as const, label: "Migración" },
   ];
 
   return (
@@ -87,6 +89,7 @@ export default function AdminDashboardPage() {
         {activeTab === "plataformas" && <CrearPlataformaTab />}
         {activeTab === "clientes" && <ClientesTab />}
         {activeTab === "accesos" && <AccesosTab />}
+        {activeTab === "migracion" && <MigracionTab />}
       </main>
     </div>
   );

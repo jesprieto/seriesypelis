@@ -1,12 +1,13 @@
 "use client";
 
-import { Monitor, Wallet } from "lucide-react";
+import { Monitor, Wallet, RefreshCw } from "lucide-react";
 import { getPlataformasActivas } from "@/lib/utils";
 import type { Compra } from "@/lib/mockData";
 
 interface HeaderCardsProps {
   historialCompras: Compra[];
   saldo: number;
+  onRefresh?: () => void;
 }
 
 const PLATAFORMA_COLORS = [
@@ -21,7 +22,7 @@ const PLATAFORMA_COLORS = [
   "bg-indigo-400",
 ];
 
-export default function HeaderCards({ historialCompras, saldo }: HeaderCardsProps) {
+export default function HeaderCards({ historialCompras, saldo, onRefresh }: HeaderCardsProps) {
   const plataformasActivas = getPlataformasActivas(historialCompras);
   const numPerfiles = plataformasActivas.length;
 
@@ -65,6 +66,16 @@ export default function HeaderCards({ historialCompras, saldo }: HeaderCardsProp
             <p className="text-xs text-gray-500 mb-0.5">Saldo actual</p>
             <div className="flex items-center gap-2">
               <p className="text-lg font-bold text-gray-900">{formattedSaldo}</p>
+              {onRefresh && (
+                <button
+                  type="button"
+                  onClick={onRefresh}
+                  className="shrink-0 p-1.5 rounded-lg text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors"
+                  title="Actualizar saldo"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              )}
               <a
                 href="https://wa.link/fnvpib"
                 target="_blank"

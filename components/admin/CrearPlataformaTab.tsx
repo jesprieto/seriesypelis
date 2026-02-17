@@ -3,24 +3,97 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { Pencil, Trash2 } from "lucide-react";
-import { getPlanes, setPlanes, contarPerfilesDisponibles } from "@/lib/mockData";
+import { getPlanes, setPlanes, contarPerfilesDisponibles } from "@/lib/data";
+import { uploadPlatformImage } from "@/lib/storage";
+import { isSupabaseConfigured } from "@/lib/supabase";
 import type { Plan } from "@/lib/mockData";
+
+function PlanRow({
+  plan,
+  onEditar,
+  onEliminar,
+  contarPerfilesDisponibles,
+}: {
+  plan: Plan;
+  onEditar: () => void;
+  onEliminar: () => void;
+  contarPerfilesDisponibles: (plataforma: string) => Promise<number>;
+}) {
+  const [disp, setDisp] = useState(0);
+  useEffect(() => {
+    contarPerfilesDisponibles(plan.nombre).then(setDisp);
+  }, [plan.nombre, contarPerfilesDisponibles]);
+
+  return (
+    <tr className="border-b border-gray-100 last:border-0 hover:bg-gray-50/50">
+      <td className="py-3 px-4">
+        <div className="flex items-center gap-3">
+          {plan.imagen ? (
+            <img
+              src={plan.imagen}
+              alt=""
+              className="w-10 h-10 rounded-lg object-cover shrink-0"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center shrink-0">
+              <Image src="/store.svg" alt="" width={20} height={20} className="opacity-50" />
+            </div>
+          )}
+          <span className="font-medium text-gray-900">{plan.nombre}</span>
+        </div>
+      </td>
+      <td className="py-3 px-4 text-center">
+        <span
+          className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+            disp > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+          }`}
+        >
+          {disp} {disp === 1 ? "perfil disponible" : "perfiles disponibles"}
+        </span>
+      </td>
+      <td className="py-3 px-4 text-right">
+        <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={onEditar}
+            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-orange-600 transition-colors"
+            title="Editar"
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onEliminar}
+            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-red-600 transition-colors"
+            title="Eliminar"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
 
 export default function CrearPlataformaTab() {
   const [planes, setPlanesState] = useState<Plan[]>([]);
   const [nombre, setNombre] = useState("");
   const [precio, setPrecio] = useState("");
   const [imagenPreview, setImagenPreview] = useState<string | null>(null);
+  const [imagenFile, setImagenFile] = useState<File | null>(null);
   const [imagenBase64, setImagenBase64] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<{ tipo: "ok" | "error"; text: string } | null>(null);
   const [editando, setEditando] = useState<Plan | null>(null);
   const [editNombre, setEditNombre] = useState("");
   const [editPrecio, setEditPrecio] = useState("");
   const [editImagen, setEditImagen] = useState<string | null>(null);
+  const [editImagenFile, setEditImagenFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileRef = useRef<HTMLInputElement>(null);
 
-  const refresh = () => setPlanesState(getPlanes());
+  const refresh = async () => {
+    const data = await getPlanes();
+    setPlanesState(data);
+  };
 
   useEffect(() => {
     refresh();
@@ -36,11 +109,11 @@ export default function CrearPlataformaTab() {
       setMensaje({ tipo: "error", text: "Solo se permiten imágenes" });
       return;
     }
+    setImagenFile(file);
     const reader = new FileReader();
     reader.onload = () => {
-      const result = reader.result as string;
-      setImagenBase64(result);
-      setImagenPreview(result);
+      setImagenBase64(reader.result as string);
+      setImagenPreview(reader.result as string);
     };
     reader.readAsDataURL(file);
   };
@@ -49,12 +122,13 @@ export default function CrearPlataformaTab() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) return;
+    setEditImagenFile(file);
     const reader = new FileReader();
     reader.onload = () => setEditImagen(reader.result as string);
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMensaje(null);
     const valor = parseInt(precio.replace(/\D/g, ""), 10);
@@ -66,23 +140,38 @@ export default function CrearPlataformaTab() {
       setMensaje({ tipo: "error", text: "El valor debe ser un número mayor a 0" });
       return;
     }
+    setLoading(true);
+    try {
+      const planId = String(Date.now());
+      let imagenUrl: string | undefined;
+      if (isSupabaseConfigured() && imagenFile) {
+        const res = await uploadPlatformImage(imagenFile, planId);
+        if ("url" in res) imagenUrl = res.url;
+        else setMensaje({ tipo: "error", text: res.error ?? "Error al subir imagen" });
+      } else if (imagenBase64) {
+        imagenUrl = imagenBase64;
+      }
 
-    const lista = getPlanes();
-    const nuevoPlan: Plan = {
-      id: String(Date.now()),
-      nombre: nombre.trim(),
-      precio: valor,
-      imagen: imagenBase64 || undefined,
-    };
-    setPlanes([...lista, nuevoPlan]);
-    refresh();
+      const lista = await getPlanes();
+      const nuevoPlan: Plan = {
+        id: planId,
+        nombre: nombre.trim(),
+        precio: valor,
+        imagen: imagenUrl,
+      };
+      await setPlanes([...lista, nuevoPlan]);
+      refresh();
 
-    setMensaje({ tipo: "ok", text: "Plataforma creada correctamente" });
-    setNombre("");
-    setPrecio("");
-    setImagenBase64(null);
-    setImagenPreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+      setMensaje({ tipo: "ok", text: "Plataforma creada correctamente" });
+      setNombre("");
+      setPrecio("");
+      setImagenBase64(null);
+      setImagenPreview(null);
+      setImagenFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEditar = (plan: Plan) => {
@@ -92,33 +181,39 @@ export default function CrearPlataformaTab() {
     setEditImagen(plan.imagen || null);
   };
 
-  const handleGuardarEdicion = (e: React.FormEvent) => {
+  const handleGuardarEdicion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editando) return;
     const valor = parseInt(editPrecio.replace(/\D/g, ""), 10);
     if (!editNombre.trim()) return;
     if (isNaN(valor) || valor <= 0) return;
+    setLoading(true);
+    try {
+      let imagenUrl: string | undefined = editImagen || undefined;
+      if (isSupabaseConfigured() && editImagenFile) {
+        const res = await uploadPlatformImage(editImagenFile, editando.id);
+        if ("url" in res) imagenUrl = res.url;
+      }
 
-    const lista = getPlanes();
-    const actualizados = lista.map((p) =>
-      p.id === editando.id
-        ? {
-            ...p,
-            nombre: editNombre.trim(),
-            precio: valor,
-            imagen: editImagen || undefined,
-          }
-        : p
-    );
-    setPlanes(actualizados);
-    refresh();
-    setEditando(null);
+      const lista = await getPlanes();
+      const actualizados = lista.map((p) =>
+        p.id === editando.id
+          ? { ...p, nombre: editNombre.trim(), precio: valor, imagen: imagenUrl }
+          : p
+      );
+      await setPlanes(actualizados);
+      refresh();
+      setEditando(null);
+      setEditImagenFile(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleEliminar = (plan: Plan) => {
+  const handleEliminar = async (plan: Plan) => {
     if (!confirm(`¿Eliminar la plataforma "${plan.nombre}"?`)) return;
-    const lista = getPlanes().filter((p) => p.id !== plan.id);
-    setPlanes(lista);
+    const lista = (await getPlanes()).filter((p) => p.id !== plan.id);
+    await setPlanes(lista);
     refresh();
   };
 
@@ -247,59 +342,15 @@ export default function CrearPlataformaTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {planes.map((plan) => {
-                    const disp = contarPerfilesDisponibles(plan.nombre);
-                    return (
-                      <tr
-                        key={plan.id}
-                        className="border-b border-gray-100 last:border-0 hover:bg-gray-50/50"
-                      >
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-3">
-                            {plan.imagen ? (
-                              <img
-                                src={plan.imagen}
-                                alt=""
-                                className="w-10 h-10 rounded-lg object-cover shrink-0"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center shrink-0">
-                                <Image src="/store.svg" alt="" width={20} height={20} className="opacity-50" />
-                              </div>
-                            )}
-                            <span className="font-medium text-gray-900">{plan.nombre}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          <span
-                            className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                              disp > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {disp} {disp === 1 ? "perfil disponible" : "perfiles disponibles"}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => handleEditar(plan)}
-                              className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-orange-600 transition-colors"
-                              title="Editar"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleEliminar(plan)}
-                              className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-red-600 transition-colors"
-                              title="Eliminar"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {planes.map((plan) => (
+                    <PlanRow
+                      key={plan.id}
+                      plan={plan}
+                      onEditar={() => handleEditar(plan)}
+                      onEliminar={() => handleEliminar(plan)}
+                      contarPerfilesDisponibles={contarPerfilesDisponibles}
+                    />
+                  ))}
                 </tbody>
               </table>
             </div>

@@ -12,7 +12,7 @@ function estadoCalculado(compra: Compra): Compra["estado"] {
 }
 
 export default function HistorialPage() {
-  const { saldo, historialCompras } = useAuth();
+  const { saldo, historialCompras, refreshCliente } = useAuth();
   const [compraSeleccionada, setCompraSeleccionada] = useState<Compra | null>(null);
   const [modalAccesoOpen, setModalAccesoOpen] = useState(false);
 
@@ -42,7 +42,7 @@ export default function HistorialPage() {
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
           Historial
         </h1>
-        <HeaderCards historialCompras={historialCompras} saldo={saldo} />
+        <HeaderCards historialCompras={historialCompras} saldo={saldo} onRefresh={refreshCliente} />
       </div>
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">

@@ -4,16 +4,16 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import HeaderCards from "@/components/dashboard/HeaderCards";
 import PlanCard from "@/components/dashboard/PlanCard";
-import { getPlanes } from "@/lib/mockData";
+import { getPlanes } from "@/lib/data";
 import type { Plan } from "@/lib/mockData";
 
 export default function PlanesPage() {
-  const { saldo, historialCompras } = useAuth();
+  const { saldo, historialCompras, refreshCliente } = useAuth();
   const [planes, setPlanes] = useState<Plan[]>([]);
 
   useEffect(() => {
-    setPlanes(getPlanes());
-    const handler = () => setPlanes(getPlanes());
+    getPlanes().then(setPlanes);
+    const handler = () => getPlanes().then(setPlanes);
     window.addEventListener("storage", handler);
     return () => window.removeEventListener("storage", handler);
   }, []);
@@ -24,7 +24,7 @@ export default function PlanesPage() {
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
           Plataformas
         </h1>
-        <HeaderCards historialCompras={historialCompras} saldo={saldo} />
+        <HeaderCards historialCompras={historialCompras} saldo={saldo} onRefresh={refreshCliente} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {planes.map((plan) => (

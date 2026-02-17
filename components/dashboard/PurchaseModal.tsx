@@ -34,14 +34,14 @@ export default function PurchaseModal({
     onClose();
   };
 
-  const handleComprar = () => {
+  const handleComprar = async () => {
     if (!plan) return;
     setError("");
     if (saldo < plan.precio) {
       setError("Saldo insuficiente, ve al botón recargar y compra más saldo.");
       return;
     }
-    const nuevaCompra = comprarPlan(plan);
+    const nuevaCompra = await comprarPlan(plan);
     if (nuevaCompra) {
       setCompraExitosa(nuevaCompra);
     } else {

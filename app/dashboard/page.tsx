@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import HeaderCards from "@/components/dashboard/HeaderCards";
 
 export default function DashboardPage() {
-  const { saldo, historialCompras } = useAuth();
+  const { saldo, historialCompras, refreshCliente } = useAuth();
 
   return (
     <div className="p-6 md:p-8">
@@ -12,7 +12,7 @@ export default function DashboardPage() {
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
           Dashboard
         </h1>
-        <HeaderCards historialCompras={historialCompras} saldo={saldo} />
+        <HeaderCards historialCompras={historialCompras} saldo={saldo} onRefresh={refreshCliente} />
       </div>
     </div>
   );
