@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Plan, type Compra, contarPerfilesDisponibles } from "@/lib/mockData";
+import type { Plan, Compra } from "@/lib/mockData";
+import { contarPerfilesDisponibles } from "@/lib/data";
 import AccessSuccessModal from "./AccessSuccessModal";
 
 interface PurchaseModalProps {
@@ -23,7 +24,7 @@ export default function PurchaseModal({
 
   useEffect(() => {
     if (isOpen && plan) {
-      setDisponibles(contarPerfilesDisponibles(plan.nombre));
+      contarPerfilesDisponibles(plan.nombre).then(setDisponibles);
       setError("");
     }
   }, [isOpen, plan]);

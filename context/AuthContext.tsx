@@ -226,11 +226,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       historialCompras: [nuevaCompra, ...prev.historialCompras],
     }));
     if (state.user) {
+      // Solo actualizar saldo en la tabla clientes (NO tocar historialCompras para evitar duplicados)
       await actualizarCliente(state.user, (c) => ({
         ...c,
         saldo: c.saldo - plan.precio,
-        historialCompras: [nuevaCompra, ...c.historialCompras],
       }));
+      // Insertar la compra UNA sola vez en la tabla compras
       await insertarCompra(state.user, nuevaCompra);
     }
     return nuevaCompra;

@@ -22,8 +22,8 @@ export async function ensureImagesBucket(): Promise<boolean> {
 }
 
 /**
- * Sube una imagen al bucket y devuelve la URL pública.
- * Si el bucket no existe, devuelve error.
+ * Sube una imagen al bucket y devuelve una signed URL (funciona sin importar
+ * si el bucket es público o privado).
  */
 export async function uploadPlatformImage(
   file: File,
@@ -44,12 +44,20 @@ export async function uploadPlatformImage(
     return { error: error.message };
   }
 
-  // Usar filePath local en vez de data.path para evitar URL doble-bucket
-  // en versiones de supabase-js donde data.path incluye el nombre del bucket
-  const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
-  // Agregar timestamp anti-caché para forzar recarga de la imagen
-  const cacheBuster = `?t=${Date.now()}`;
-  return { url: urlData.publicUrl + cacheBuster };
+  // Usar signed URL con expiración de 10 años para que funcione
+  // independientemente de si el bucket es público o privado
+  const TEN_YEARS = 60 * 60 * 24 * 365 * 10;
+  const { data: signedData, error: signedError } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(filePath, TEN_YEARS);
+
+  if (signedError || !signedData?.signedUrl) {
+    // Fallback a public URL si signed URL falla
+    const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
+    return { url: urlData.publicUrl };
+  }
+
+  return { url: signedData.signedUrl };
 }
 
 /**
