@@ -148,38 +148,32 @@ export async function getInventarioFromSupabase(): Promise<InventarioPlataforma[
   for (const ip of invPlatforms) {
     const { data: cuentasData } = await supabase
       .from("cuentas_plataforma")
-      .select(`
-        id,
-        correo,
-        contraseña,
-        perfiles(numero, pin, estado, cliente_correo, fecha_asignacion, fecha_expiracion)
-      `)
+      .select("id, correo, contraseña")
       .eq("inventario_plataforma_id", ip.id);
-    const cuentas = cuentasData ?? [];
+    const cuentasRaw = (cuentasData ?? []) as unknown as Array<{ id: string; correo: string; contraseña: string }>;
 
-    const cuentasMapped: CuentaPlataforma[] = cuentas.map((c: { perfiles?: unknown[]; [k: string]: unknown }) => {
-      const perfiles = (c.perfiles ?? []) as Array<{
-        numero: number;
-        pin: string;
-        estado: string;
-        cliente_correo?: string;
-        fecha_asignacion?: string;
-        fecha_expiracion?: string;
-      }>;
-      return {
+    const cuentasMapped: CuentaPlataforma[] = [];
+    for (const c of cuentasRaw) {
+      const { data: perfilesData } = await supabase
+        .from("perfiles")
+        .select("numero, pin, estado, cliente_correo, fecha_asignacion, fecha_expiracion")
+        .eq("cuenta_plataforma_id", String(c.id))
+        .order("numero");
+      const perfiles = (perfilesData ?? []).map((p) => ({
+        numero: p.numero,
+        pin: p.pin,
+        estado: p.estado as "disponible" | "ocupado",
+        clienteCorreo: p.cliente_correo ?? undefined,
+        fechaAsignacion: p.fecha_asignacion ?? undefined,
+        fechaExpiracion: p.fecha_expiracion ?? undefined,
+      }));
+      cuentasMapped.push({
         id: String(c.id),
         correo: String(c.correo),
         contraseña: String(c.contraseña),
-        perfiles: perfiles.map((p) => ({
-          numero: p.numero,
-          pin: p.pin,
-          estado: p.estado as "disponible" | "ocupado",
-          clienteCorreo: p.cliente_correo,
-          fechaAsignacion: p.fecha_asignacion,
-          fechaExpiracion: p.fecha_expiracion,
-        })),
-      };
-    });
+        perfiles,
+      });
+    }
     result.push({ plataforma: ip.plataforma, cuentas: cuentasMapped });
   }
   return result;

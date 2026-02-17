@@ -341,7 +341,7 @@ export default function AccesosTab() {
         <p className="text-gray-500 text-sm">No hay inventario registrado</p>
       ) : inventarioFiltrado.length === 0 ? (
         <p className="text-gray-500 text-sm py-4">
-          No se encontraron cuentas con el correo "{busquedaCorreo}"
+          {`No se encontraron cuentas con el correo "${busquedaCorreo}"`}
         </p>
       ) : (
         <div className="space-y-3">
