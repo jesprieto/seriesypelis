@@ -55,10 +55,13 @@ SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key_aqui
 
 Las imágenes de las plataformas se guardan automáticamente en Supabase Storage al crearlas o editarlas.
 
+**Importante**: Sin este bucket las imágenes se guardan en base64 (funcionan pero ocupan más espacio).
+
 1. En Supabase → **Storage** → **New bucket**
-2. Nombre: `images`
-3. Marca **Public bucket** (para que las imágenes sean accesibles por URL)
-4. Ejecuta `supabase/migrations/002_storage_policies.sql` en el SQL Editor para las políticas de upload
+2. Nombre: `images` (exactamente)
+3. **Public bucket**: activar ON (obligatorio para que las URLs funcionen)
+4. Create bucket
+5. Ejecuta `supabase/migrations/002_storage_policies.sql` en el SQL Editor
 
 ---
 

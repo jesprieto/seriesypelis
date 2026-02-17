@@ -13,9 +13,13 @@ interface PlanCardProps {
 export default function PlanCard({ plan }: PlanCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [perfilesDisponibles, setPerfilesDisponibles] = useState(0);
+  const [imagenRota, setImagenRota] = useState(false);
   useEffect(() => {
     contarPerfilesDisponibles(plan.nombre).then(setPerfilesDisponibles);
   }, [plan.nombre]);
+  useEffect(() => {
+    setImagenRota(false);
+  }, [plan.imagen]);
   const agotado = perfilesDisponibles === 0;
 
   const formattedPrecio = new Intl.NumberFormat("es-CO", {
@@ -28,11 +32,12 @@ export default function PlanCard({ plan }: PlanCardProps) {
     <>
       <div className="bg-gray-100 rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow relative group">
         <div className="aspect-[16/9] bg-gray-100 flex items-center justify-center relative overflow-hidden">
-          {plan.imagen ? (
+          {plan.imagen && !imagenRota ? (
             <img
               src={plan.imagen}
               alt={plan.nombre}
               className="w-full h-full object-cover"
+              onError={() => setImagenRota(true)}
             />
           ) : (
             <Image

@@ -23,22 +23,33 @@ export async function ensureImagesBucket(): Promise<boolean> {
 
 /**
  * Sube una imagen al bucket y devuelve la URL pública.
+ * Si el bucket no existe, devuelve error.
  */
 export async function uploadPlatformImage(
   file: File,
   planId: string
 ): Promise<{ url: string } | { error: string }> {
   if (!isSupabaseConfigured()) return { error: "Supabase no configurado" };
-  const ext = file.name.split(".").pop() || "jpg";
-  const path = `plataformas/${planId}.${ext}`;
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const sanitizedExt = ["jpeg", "jpg", "png", "webp", "gif"].includes(ext) ? ext : "jpg";
+  const path = `plataformas/${planId}.${sanitizedExt}`;
 
-  const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
+  const { data, error } = await supabase.storage.from(BUCKET).upload(path, file, {
     contentType: file.type,
     upsert: true,
+    cacheControl: "3600",
   });
 
-  if (error) return { error: error.message };
-  const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  if (error) {
+    return {
+      error:
+        error.message === "The resource already exists"
+          ? "Imagen duplicada. Intenta con otro nombre."
+          : error.message,
+    };
+  }
+  if (!data?.path) return { error: "No se obtuvo la URL de la imagen" };
+  const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(data.path);
   return { url: urlData.publicUrl };
 }
 

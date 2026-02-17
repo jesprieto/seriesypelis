@@ -141,15 +141,30 @@ export default function CrearPlataformaTab() {
       return;
     }
     setLoading(true);
+    setMensaje(null);
+    let usadoFallbackImagen = false;
     try {
       const planId = String(Date.now());
       let imagenUrl: string | undefined;
-      if (isSupabaseConfigured() && imagenFile) {
-        const res = await uploadPlatformImage(imagenFile, planId);
-        if ("url" in res) imagenUrl = res.url;
-        else setMensaje({ tipo: "error", text: res.error ?? "Error al subir imagen" });
-      } else if (imagenBase64) {
-        imagenUrl = imagenBase64;
+      if (imagenFile || imagenBase64) {
+        if (isSupabaseConfigured() && imagenFile) {
+          const res = await uploadPlatformImage(imagenFile, planId);
+          if ("url" in res) {
+            imagenUrl = res.url;
+          } else if (imagenBase64) {
+            imagenUrl = imagenBase64;
+            usadoFallbackImagen = true;
+          } else {
+            setMensaje({
+              tipo: "error",
+              text: "error" in res ? res.error : "Crea el bucket 'images' en Supabase → Storage (público).",
+            });
+            setLoading(false);
+            return;
+          }
+        } else if (imagenBase64) {
+          imagenUrl = imagenBase64;
+        }
       }
 
       const lista = await getPlanes();
@@ -162,7 +177,12 @@ export default function CrearPlataformaTab() {
       await setPlanes([...lista, nuevoPlan]);
       refresh();
 
-      setMensaje({ tipo: "ok", text: "Plataforma creada correctamente" });
+      setMensaje({
+        tipo: "ok",
+        text: usadoFallbackImagen
+          ? "Plataforma creada. Imagen guardada localmente. Crea el bucket 'images' en Supabase → Storage para subir a la nube."
+          : "Plataforma creada correctamente",
+      });
       setNombre("");
       setPrecio("");
       setImagenBase64(null);
@@ -193,6 +213,11 @@ export default function CrearPlataformaTab() {
       if (isSupabaseConfigured() && editImagenFile) {
         const res = await uploadPlatformImage(editImagenFile, editando.id);
         if ("url" in res) imagenUrl = res.url;
+        else {
+          setMensaje({ tipo: "error", text: res.error ?? "Error al subir imagen" });
+          setLoading(false);
+          return;
+        }
       }
 
       const lista = await getPlanes();
