@@ -8,7 +8,7 @@ import { PLATAFORMAS_OFICIALES } from "@/lib/plataformas";
 import ProcesandoSpinner from "@/components/ui/ProcesandoSpinner";
 import { uploadPlatformImage } from "@/lib/storage";
 import { isSupabaseConfigured } from "@/lib/supabase";
-import type { Plan } from "@/lib/mockData";
+import type { Plan } from "@/lib/types";
 
 function PlanRow({
   plan,

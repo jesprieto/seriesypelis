@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import HeaderCards from "@/components/dashboard/HeaderCards";
 import { getAvatarParaCliente, getClienteByCorreo } from "@/lib/data";
-import type { Cliente } from "@/lib/mockData";
+import type { Cliente } from "@/lib/types";
 
 export default function ConfiguracionPage() {
   const { saldo, historialCompras, user, nombrePerfil, avatarEmoji, updatePerfil, refreshCliente } = useAuth();

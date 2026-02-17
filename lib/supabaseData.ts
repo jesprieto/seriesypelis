@@ -14,7 +14,7 @@ import type {
   CuentaPlataforma,
   Perfil,
   PerfilAsignado,
-} from "./mockData";
+} from "./types";
 
 // ─── Planes ───
 
@@ -348,6 +348,61 @@ export async function liberarPerfilInSupabase(
     if (errCompra) {
       console.error("liberarPerfil update compras:", errCompra);
     }
+  }
+  return true;
+}
+
+/** Suspende en compras la fila que coincida (por id). */
+async function suspenderCompraById(compraId: string): Promise<void> {
+  await supabase
+    .from("compras")
+    .update({
+      estado: "Suspendido",
+      correo: null,
+      contraseña: null,
+      perfil: null,
+      pin: null,
+    })
+    .eq("id", compraId);
+}
+
+export async function eliminarCuentaDelInventarioInSupabase(
+  plataforma: string,
+  cuentaId: string
+): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  const nombrePlat = normalizarPlataforma(plataforma);
+  const inv = await getInventarioFromSupabase();
+  const plat = inv.find((i) => normalizarPlataforma(i.plataforma) === nombrePlat);
+  if (!plat) return false;
+  const cuenta = plat.cuentas.find((c) => c.id === cuentaId);
+  if (!cuenta) return false;
+
+  const cuentaCorreoLower = (cuenta.correo ?? "").trim().toLowerCase();
+  for (const perfil of cuenta.perfiles) {
+    if (perfil.estado === "ocupado" && perfil.clienteCorreo) {
+      const { data: comprasMatch } = await supabase
+        .from("compras")
+        .select("id, correo")
+        .eq("cliente_correo", perfil.clienteCorreo)
+        .eq("plataforma", nombrePlat)
+        .eq("perfil", perfil.numero);
+      const compraId = (comprasMatch ?? []).find(
+        (c: { id: string; correo?: string | null }) =>
+          (c.correo ?? "").trim().toLowerCase() === cuentaCorreoLower
+      )?.id ?? (comprasMatch?.[0] as { id: string } | undefined)?.id;
+      if (compraId) await suspenderCompraById(compraId);
+    }
+  }
+
+  await supabase.from("perfiles").delete().eq("cuenta_plataforma_id", cuentaId);
+  const { error: errCuenta } = await supabase
+    .from("cuentas_plataforma")
+    .delete()
+    .eq("id", cuentaId);
+  if (errCuenta) {
+    console.error("eliminarCuentaDelInventario delete cuenta:", errCuenta);
+    return false;
   }
   return true;
 }

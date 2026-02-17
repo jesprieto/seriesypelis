@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import HeaderCards from "@/components/dashboard/HeaderCards";
 import AccesoModal from "@/components/dashboard/AccesoModal";
 import { esCompraDisponible } from "@/lib/utils";
-import type { Compra } from "@/lib/mockData";
+import type { Compra } from "@/lib/types";
 
 function estadoCalculado(compra: Compra): Compra["estado"] {
   if (compra.estado === "Suspendido") return "Suspendido";

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Plan } from "@/lib/mockData";
+import type { Plan } from "@/lib/types";
 import { contarPerfilesDisponibles } from "@/lib/data";
 import PurchaseModal from "./PurchaseModal";
 

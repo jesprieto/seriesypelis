@@ -67,22 +67,7 @@ Las imágenes de las plataformas se guardan automáticamente en Supabase Storage
 
 ## Después del setup
 
-Ya está creada la capa de datos en `lib/supabaseData.ts` con funciones equivalentes a `mockData`:
-
-| mockData | Supabase |
-|----------|----------|
-| `getPlanes()` | `getPlanesFromSupabase()` |
-| `setPlanes()` | `setPlanesInSupabase()` |
-| `getClientes()` | `getClientesFromSupabase()` |
-| `getClienteByCorreo()` | `getClienteByCorreoFromSupabase()` |
-| `registrarCliente()` | `registrarClienteInSupabase()` |
-| `actualizarCliente()` | `actualizarClienteInSupabase()` |
-| `getInventario()` | `getInventarioFromSupabase()` |
-| `setInventario()` | `setInventarioInSupabase()` |
-| `asignarPerfilDisponible()` | `asignarPerfilDisponibleInSupabase()` |
-| `contarPerfilesDisponibles()` | `contarPerfilesDisponiblesInSupabase()` |
-
-**Siguiente paso**: Migrar los componentes para usar estas funciones async cuando Supabase esté configurado. Las funciones de Supabase son **asíncronas**, por lo que habrá que adaptar `AuthContext`, `RegisterForm`, `PlanCard`, `planes/page`, `AccesosTab`, `ClientesTab`, `CrearPlataformaTab` y `Sidebar` para cargar datos de forma async (por ejemplo con `useEffect` + `useState` o SWR).
+La app usa **solo Supabase** como fuente de datos. La capa unificada está en `lib/data.ts` y llama a `lib/supabaseData.ts`. Los tipos están en `lib/types.ts`. Sin variables de Supabase configuradas, las funciones devuelven vacío ([] / null / false).
 
 ---
 

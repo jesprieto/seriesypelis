@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import type { Plan, Compra } from "@/lib/mockData";
+import type { Plan, Compra } from "@/lib/types";
 import { contarPerfilesDisponibles } from "@/lib/data";
 import AccessSuccessModal from "./AccessSuccessModal";
 

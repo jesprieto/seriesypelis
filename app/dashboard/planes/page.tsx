@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import HeaderCards from "@/components/dashboard/HeaderCards";
 import PlanCard from "@/components/dashboard/PlanCard";
 import { getPlanes } from "@/lib/data";
-import type { Plan } from "@/lib/mockData";
+import type { Plan } from "@/lib/types";
 
 export default function PlanesPage() {
   const { saldo, historialCompras, refreshCliente } = useAuth();

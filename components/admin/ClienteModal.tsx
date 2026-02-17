@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Cliente, Compra } from "@/lib/mockData";
+import type { Cliente, Compra } from "@/lib/types";
 import { esCompraDisponible } from "@/lib/utils";
 
 interface ClienteModalProps {

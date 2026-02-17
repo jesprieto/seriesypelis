@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getClientes, actualizarCliente, getClienteByCorreo } from "@/lib/data";
-import type { Cliente } from "@/lib/mockData";
+import type { Cliente } from "@/lib/types";
 import { getPlataformasActivas } from "@/lib/utils";
 import ClienteModal from "./ClienteModal";
 import ProcesandoSpinner from "@/components/ui/ProcesandoSpinner";

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import confetti from "canvas-confetti";
 import { Copy } from "lucide-react";
-import type { Compra } from "@/lib/mockData";
+import type { Compra } from "@/lib/types";
 
 interface AccessSuccessModalProps {
   compra: Compra;

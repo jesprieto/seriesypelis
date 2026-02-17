@@ -2,7 +2,7 @@
 
 import { Monitor, Wallet, RefreshCw } from "lucide-react";
 import { getPlataformasActivas } from "@/lib/utils";
-import type { Compra } from "@/lib/mockData";
+import type { Compra } from "@/lib/types";
 
 interface HeaderCardsProps {
   historialCompras: Compra[];

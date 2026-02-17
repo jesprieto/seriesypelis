@@ -1,12 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from "react";
-import {
-  DEFAULT_SALDO,
-  getClientes,
-  setClientes,
-  getAvatarParaCliente,
-} from "@/lib/mockData";
+import { DEFAULT_SALDO, getAvatarParaCliente } from "@/lib/types";
 import {
   getClienteByCorreo,
   actualizarCliente,
@@ -14,8 +9,7 @@ import {
   insertarCompra,
   registrarCliente,
 } from "@/lib/data";
-import { isSupabaseConfigured } from "@/lib/supabase";
-import type { Compra, Plan } from "@/lib/mockData";
+import type { Compra, Plan } from "@/lib/types";
 
 const STORAGE_KEY = "pelis-series-auth";
 const PERFIL_KEY_PREFIX = "pelis-series-perfil-";
@@ -45,6 +39,7 @@ interface AuthState {
   isAuthenticated: boolean;
   historialCompras: Compra[];
   nombrePerfil: string | null;
+  nombreCliente: string | null;
   avatarEmoji: string | null;
 }
 
@@ -63,6 +58,7 @@ const initialState: AuthState = {
   isAuthenticated: false,
   historialCompras: [],
   nombrePerfil: null,
+  nombreCliente: null,
   avatarEmoji: null,
 };
 
@@ -92,6 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           isAuthenticated: !!parsed.user,
           historialCompras: historial,
           nombrePerfil: nombrePerfilVal,
+          nombreCliente: parsed.nombreCliente ?? null,
           avatarEmoji: parsed.avatarEmoji ?? null,
         });
       } catch {
@@ -111,6 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           saldo: state.saldo,
           historialCompras: state.historialCompras,
           nombrePerfil: state.nombrePerfil,
+          nombreCliente: state.nombreCliente,
           avatarEmoji: state.avatarEmoji,
         })
       );
@@ -127,6 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         saldo: cliente.saldo,
         historialCompras: cliente.historialCompras,
+        nombreCliente: cliente.nombre,
         avatarEmoji: cliente.avatarEmoji ?? prev.avatarEmoji,
       }));
     }
@@ -162,33 +161,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: true,
         historialCompras: cliente.historialCompras,
         nombrePerfil: savedNombre,
+        nombreCliente: cliente.nombre,
         avatarEmoji: avatar,
       });
     } else {
       const newId = String(Date.now());
       const { emoji } = getAvatarParaCliente(newId);
       const nombre = correoTrim.split("@")[0] || "Usuario";
-      if (isSupabaseConfigured()) {
-        const res = await registrarCliente({ nombre, correo: correoTrim, contraseña: clave });
-        if (!res.ok) return;
-      } else {
-        const newCliente = {
-          id: newId,
-          nombre,
-          correo: correoTrim,
-          contraseña: clave,
-          avatarEmoji: emoji,
-          saldo: DEFAULT_SALDO,
-          historialCompras: [] as Compra[],
-        };
-        setClientes([...getClientes(), newCliente]);
-      }
+      const res = await registrarCliente({ nombre, correo: correoTrim, contraseña: clave });
+      if (!res.ok) return;
       setState({
         user: correoTrim,
         saldo: DEFAULT_SALDO,
         isAuthenticated: true,
         historialCompras: [],
         nombrePerfil: null,
+        nombreCliente: nombre,
         avatarEmoji: emoji,
       });
     }
@@ -272,7 +260,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    if (mounted && state.isAuthenticated && state.user && isSupabaseConfigured()) {
+    if (mounted && state.isAuthenticated && state.user) {
       refreshCliente();
     }
   }, [mounted, state.isAuthenticated, state.user]);

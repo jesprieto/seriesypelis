@@ -1,4 +1,4 @@
-import type { Compra } from "./mockData";
+import type { Compra } from "./types";
 
 const DIAS_EXPIRACION = 30;
 

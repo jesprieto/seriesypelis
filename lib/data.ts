@@ -1,57 +1,38 @@
 /**
- * Capa de datos unificada.
- * Usa Supabase cuando está configurado, sino localStorage (mockData).
+ * Capa de datos. Solo usa Supabase (supabaseData.ts).
+ * Si Supabase no está configurado, las funciones devuelven vacío/false.
  */
 
-import { isSupabaseConfigured } from "./supabase";
 import { normalizarPlataforma } from "./plataformas";
-import * as mock from "./mockData";
 import * as db from "./supabaseData";
-import type { Plan, Cliente, Compra, InventarioPlataforma, CuentaPlataforma } from "./mockData";
+import type { Plan, Cliente, Compra, InventarioPlataforma, CuentaPlataforma } from "./types";
 
 // ─── Planes ───
 
 export async function getPlanes(): Promise<Plan[]> {
-  if (isSupabaseConfigured()) return db.getPlanesFromSupabase();
-  return mock.getPlanes();
+  return db.getPlanesFromSupabase();
 }
 
 export async function setPlanes(planes: Plan[]): Promise<void> {
-  if (isSupabaseConfigured()) {
-    await db.setPlanesInSupabase(planes);
-  } else {
-    mock.setPlanes(planes);
-  }
+  await db.setPlanesInSupabase(planes);
 }
 
 export async function updatePlan(plan: Plan): Promise<void> {
-  if (isSupabaseConfigured()) {
-    await db.updatePlanInSupabase(plan);
-  } else {
-    const planes = mock.getPlanes().map((p) => (p.id === plan.id ? plan : p));
-    mock.setPlanes(planes);
-  }
+  await db.updatePlanInSupabase(plan);
 }
 
 export async function deletePlan(planId: string): Promise<void> {
-  if (isSupabaseConfigured()) {
-    await db.deletePlanFromSupabase(planId);
-  } else {
-    const planes = mock.getPlanes().filter((p) => p.id !== planId);
-    mock.setPlanes(planes);
-  }
+  await db.deletePlanFromSupabase(planId);
 }
 
 // ─── Clientes ───
 
 export async function getClientes(): Promise<Cliente[]> {
-  if (isSupabaseConfigured()) return db.getClientesFromSupabase();
-  return mock.getClientes();
+  return db.getClientesFromSupabase();
 }
 
 export async function getClienteByCorreo(correo: string): Promise<Cliente | undefined> {
-  if (isSupabaseConfigured()) return db.getClienteByCorreoFromSupabase(correo);
-  return mock.getClienteByCorreo(correo);
+  return db.getClienteByCorreoFromSupabase(correo);
 }
 
 export async function registrarCliente(data: {
@@ -60,19 +41,14 @@ export async function registrarCliente(data: {
   contraseña: string;
   whatsapp?: string;
 }): Promise<{ ok: boolean; error?: string }> {
-  if (isSupabaseConfigured()) return db.registrarClienteInSupabase(data);
-  return mock.registrarCliente(data);
+  return db.registrarClienteInSupabase(data);
 }
 
 export async function actualizarCliente(
   correo: string,
   updater: (c: Cliente) => Cliente | Partial<Cliente>
 ): Promise<void> {
-  if (isSupabaseConfigured()) {
-    await db.actualizarClienteInSupabase(correo, updater as (c: Cliente) => Partial<Cliente>);
-  } else {
-    mock.actualizarCliente(correo, updater as (c: Cliente) => Cliente);
-  }
+  await db.actualizarClienteInSupabase(correo, updater as (c: Cliente) => Partial<Cliente>);
 }
 
 // ─── Inventario / Compras ───
@@ -82,44 +58,31 @@ export async function asignarPerfilDisponible(
   clienteCorreo: string
 ): Promise<{ correo: string; contraseña: string; perfil: number; pin: string; fechaExpiracion: string; fechaExpiracionISO: string } | null> {
   const nombreNorm = normalizarPlataforma(plataforma);
-  if (isSupabaseConfigured()) return db.asignarPerfilDisponibleInSupabase(nombreNorm, clienteCorreo);
-  return mock.asignarPerfilDisponible(nombreNorm, clienteCorreo);
+  return db.asignarPerfilDisponibleInSupabase(nombreNorm, clienteCorreo);
 }
 
 export async function insertarCompra(clienteCorreo: string, compra: Compra): Promise<void> {
-  if (isSupabaseConfigured()) {
-    await db.insertarCompraInSupabase(clienteCorreo, compra);
-  }
+  await db.insertarCompraInSupabase(clienteCorreo, compra);
 }
 
 export async function contarPerfilesDisponibles(plataforma: string): Promise<number> {
   const nombreNorm = normalizarPlataforma(plataforma);
-  if (isSupabaseConfigured()) return db.contarPerfilesDisponiblesInSupabase(nombreNorm);
-  return mock.contarPerfilesDisponibles(nombreNorm);
+  return db.contarPerfilesDisponiblesInSupabase(nombreNorm);
 }
 
 // ─── Inventario ───
 
 export async function getInventario(): Promise<InventarioPlataforma[]> {
-  if (isSupabaseConfigured()) return db.getInventarioFromSupabase();
-  return mock.getInventario();
+  return db.getInventarioFromSupabase();
 }
 
 export async function setInventario(inv: InventarioPlataforma[]): Promise<void> {
-  if (isSupabaseConfigured()) {
-    await db.setInventarioInSupabase(inv);
-  } else {
-    mock.setInventario(inv);
-  }
+  await db.setInventarioInSupabase(inv);
 }
 
 export async function ensureInventarioPlataformaExists(plataforma: string): Promise<void> {
   const nombreNorm = normalizarPlataforma(plataforma);
-  if (isSupabaseConfigured()) {
-    await db.ensureInventarioPlataformaExistsInSupabase(nombreNorm);
-  } else {
-    mock.ensureInventarioPlataformaExists(nombreNorm);
-  }
+  await db.ensureInventarioPlataformaExistsInSupabase(nombreNorm);
 }
 
 export async function correoYaExisteEnPlataforma(
@@ -127,10 +90,7 @@ export async function correoYaExisteEnPlataforma(
   correo: string
 ): Promise<boolean> {
   const nombreNorm = normalizarPlataforma(plataforma);
-  if (isSupabaseConfigured()) {
-    return db.correoYaExisteEnPlataformaEnSupabase(nombreNorm, correo);
-  }
-  return mock.correoYaExisteEnPlataforma(nombreNorm, correo);
+  return db.correoYaExisteEnPlataformaEnSupabase(nombreNorm, correo);
 }
 
 export async function liberarPerfil(
@@ -141,16 +101,21 @@ export async function liberarPerfil(
   clienteCorreo: string
 ): Promise<boolean> {
   const nombreNorm = normalizarPlataforma(plataforma);
-  if (isSupabaseConfigured()) {
-    return db.liberarPerfilInSupabase(
-      nombreNorm,
-      cuentaId,
-      cuentaCorreo,
-      numeroPerfil,
-      clienteCorreo
-    );
-  }
-  return mock.liberarPerfilOcupado(nombreNorm, cuentaId, cuentaCorreo, numeroPerfil);
+  return db.liberarPerfilInSupabase(
+    nombreNorm,
+    cuentaId,
+    cuentaCorreo,
+    numeroPerfil,
+    clienteCorreo
+  );
+}
+
+export async function eliminarCuentaDelInventario(
+  plataforma: string,
+  cuentaId: string
+): Promise<boolean> {
+  const nombreNorm = normalizarPlataforma(plataforma);
+  return db.eliminarCuentaDelInventarioInSupabase(nombreNorm, cuentaId);
 }
 
 export async function agregarCuentaAlInventario(
@@ -158,13 +123,9 @@ export async function agregarCuentaAlInventario(
   cuenta: CuentaPlataforma
 ): Promise<void> {
   const nombreNorm = normalizarPlataforma(plataforma);
-  if (isSupabaseConfigured()) {
-    await db.agregarCuentaAlInventarioInSupabase(nombreNorm, cuenta);
-  } else {
-    mock.agregarCuentaAlInventario(nombreNorm, cuenta);
-  }
+  await db.agregarCuentaAlInventarioInSupabase(nombreNorm, cuenta);
 }
 
-// ─── Otros (re-export) ───
+// ─── Re-export ───
 
-export { getAvatarParaCliente } from "./mockData";
+export { getAvatarParaCliente } from "./types";

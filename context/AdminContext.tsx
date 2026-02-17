@@ -1,8 +1,6 @@
 "use client";
 
 import React, { createContext, useContext, useLayoutEffect, useState } from "react";
-import { ADMIN_USUARIO, ADMIN_CLAVE } from "@/lib/mockData";
-import { isSupabaseConfigured } from "@/lib/supabase";
 import { validarAdminEnSupabase } from "@/lib/supabaseData";
 
 const ADMIN_STORAGE = "pelis-series-admin-auth";
@@ -30,12 +28,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (usuario: string, clave: string): Promise<boolean> => {
-    let ok = false;
-    if (isSupabaseConfigured()) {
-      ok = await validarAdminEnSupabase(usuario, clave);
-    } else {
-      ok = usuario === ADMIN_USUARIO && clave === ADMIN_CLAVE;
-    }
+    const ok = await validarAdminEnSupabase(usuario, clave);
     if (ok && typeof window !== "undefined") {
       localStorage.setItem(ADMIN_STORAGE, "1");
       setIsAdmin(true);

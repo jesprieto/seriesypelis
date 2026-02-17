@@ -6,7 +6,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { Tag, Clock, Settings, Maximize2, Menu, X, LogOut } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { getAvatarParaCliente, getClienteByCorreo } from "@/lib/mockData";
+import { getAvatarParaCliente } from "@/lib/types";
 
 const navItems = [
   { href: "/dashboard/planes", label: "Planes", icon: "/store.svg" },
@@ -18,11 +18,10 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, nombrePerfil, avatarEmoji, logout } = useAuth();
-  const cliente = user ? getClienteByCorreo(user) : null;
-  const avatar = avatarEmoji ?? (cliente ? getAvatarParaCliente(cliente.id).emoji : "🙂");
-  const avatarColor = cliente ? getAvatarParaCliente(cliente.id).color : "bg-orange-100";
-  const nombreMostrar = nombrePerfil || cliente?.nombre || user?.split("@")[0] || "Usuario";
+  const { user, nombrePerfil, nombreCliente, avatarEmoji, logout } = useAuth();
+  const avatar = avatarEmoji ?? (user ? getAvatarParaCliente(user).emoji : "🙂");
+  const avatarColor = user ? getAvatarParaCliente(user).color : "bg-orange-100";
+  const nombreMostrar = nombrePerfil || nombreCliente || user?.split("@")[0] || "Usuario";
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = () => {

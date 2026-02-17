@@ -1,6 +1,6 @@
 "use client";
 
-import type { Compra } from "@/lib/mockData";
+import type { Compra } from "@/lib/types";
 
 interface AccesoModalProps {
   compra: Compra | null;

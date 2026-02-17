@@ -7,10 +7,11 @@ import {
   setInventario,
   correoYaExisteEnPlataforma,
   liberarPerfil,
+  eliminarCuentaDelInventario,
 } from "@/lib/data";
 import { PLATAFORMAS_OFICIALES, normalizarPlataforma } from "@/lib/plataformas";
-import type { InventarioPlataforma, CuentaPlataforma, Perfil } from "@/lib/mockData";
-import { ChevronDown, ChevronRight, Plus, Upload, Pencil, Search } from "lucide-react";
+import type { InventarioPlataforma, CuentaPlataforma, Perfil } from "@/lib/types";
+import { ChevronDown, ChevronRight, Plus, Upload, Pencil, Search, Trash2 } from "lucide-react";
 import ProcesandoSpinner from "@/components/ui/ProcesandoSpinner";
 
 function crearPerfilesVacios(pins: string[]): Perfil[] {
@@ -46,6 +47,7 @@ export default function AccesosTab() {
   const [guardandoCuenta, setGuardandoCuenta] = useState(false);
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
   const [cambiandoEstado, setCambiandoEstado] = useState<string | null>(null);
+  const [borrandoCuentaId, setBorrandoCuentaId] = useState<string | null>(null);
   const csvRef = useRef<HTMLInputElement>(null);
 
   const refresh = async () => {
@@ -107,6 +109,23 @@ export default function AccesosTab() {
       await refresh();
     } finally {
       setGuardandoCuenta(false);
+    }
+  };
+
+  const handleBorrarCuenta = async (plataforma: string, cuenta: CuentaPlataforma) => {
+    if (!confirm(`¿Eliminar la cuenta ${cuenta.correo} y todos sus perfiles? Los clientes que tenían acceso verán el estado "Suspendido".`)) return;
+    setBorrandoCuentaId(cuenta.id);
+    setMensaje(null);
+    try {
+      const ok = await eliminarCuentaDelInventario(plataforma, cuenta.id);
+      if (ok) {
+        setMensaje({ tipo: "ok", text: "Cuenta eliminada. Los accesos asignados aparecerán como suspendidos para los usuarios." });
+        await refresh();
+      } else {
+        setMensaje({ tipo: "error", text: "No se pudo eliminar la cuenta." });
+      }
+    } finally {
+      setBorrandoCuentaId(null);
     }
   };
 
@@ -480,13 +499,25 @@ export default function AccesosTab() {
                             <span className="text-sm font-medium text-gray-800">{cuenta.correo}</span>
                             <span className="text-xs text-gray-500 font-mono">{cuenta.contraseña}</span>
                           </div>
-                          <button
-                            onClick={() => handleEditarCuenta(plat.plataforma, cuenta)}
-                            className="flex items-center gap-2 py-1.5 px-3 rounded-lg text-xs font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                            Editar
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleBorrarCuenta(plat.plataforma, cuenta)}
+                              disabled={borrandoCuentaId === cuenta.id}
+                              className="flex items-center gap-2 py-1.5 px-3 rounded-lg text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                              title="Eliminar cuenta y todos sus perfiles"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Borrar
+                            </button>
+                            <button
+                              onClick={() => handleEditarCuenta(plat.plataforma, cuenta)}
+                              className="flex items-center gap-2 py-1.5 px-3 rounded-lg text-xs font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                              Editar
+                            </button>
+                          </div>
                         </div>
                         <div className="overflow-x-auto">
                           <table className="w-full min-w-[500px]">
