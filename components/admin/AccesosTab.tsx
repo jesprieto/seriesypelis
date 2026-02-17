@@ -41,6 +41,8 @@ export default function AccesosTab() {
   const [editContraseña, setEditContraseña] = useState("");
   const [editPins, setEditPins] = useState<string[]>([]);
   const [busquedaCorreo, setBusquedaCorreo] = useState("");
+  const [guardandoCuenta, setGuardandoCuenta] = useState(false);
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false);
   const csvRef = useRef<HTMLInputElement>(null);
 
   const refresh = async () => {
@@ -63,6 +65,7 @@ export default function AccesosTab() {
 
   const handleAgregarCuenta = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (guardandoCuenta) return;
     setMensaje(null);
     if (!formPlataforma.trim()) {
       setMensaje({ tipo: "error", text: "Selecciona o escribe una plataforma" });
@@ -78,19 +81,25 @@ export default function AccesosTab() {
       return;
     }
 
-    const cuenta: CuentaPlataforma = {
-      id: `inv-${Date.now()}`,
-      correo: formCorreo.trim(),
-      contraseña: formContraseña.trim(),
-      perfiles: crearPerfilesVacios(formPins),
-    };
-    await agregarCuentaAlInventario(formPlataforma.trim(), cuenta);
+    setGuardandoCuenta(true);
+    try {
+      const cuenta: CuentaPlataforma = {
+        id: `inv-${Date.now()}`,
+        correo: formCorreo.trim(),
+        contraseña: formContraseña.trim(),
+        perfiles: crearPerfilesVacios(formPins),
+      };
+      await agregarCuentaAlInventario(formPlataforma.trim(), cuenta);
 
-    setFormCorreo("");
-    setFormContraseña("");
-    setFormPins(["", "", "", "", "", ""]);
-    setMensaje({ tipo: "ok", text: "Cuenta agregada correctamente" });
-    await refresh();
+      setFormCorreo("");
+      setFormContraseña("");
+      setFormPins(["", "", "", "", "", ""]);
+      setShowForm(false);
+      setMensaje({ tipo: "ok", text: "Cuenta agregada correctamente" });
+      await refresh();
+    } finally {
+      setGuardandoCuenta(false);
+    }
   };
 
   const handleEditarCuenta = (plataforma: string, cuenta: CuentaPlataforma) => {
@@ -106,7 +115,7 @@ export default function AccesosTab() {
 
   const handleGuardarEdicion = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editandoCuenta) return;
+    if (!editandoCuenta || guardandoEdicion) return;
     if (!editCorreo.trim() || !editContraseña.trim()) {
       setMensaje({ tipo: "error", text: "Correo y contraseña son obligatorios" });
       return;
@@ -117,6 +126,8 @@ export default function AccesosTab() {
       return;
     }
 
+    setGuardandoEdicion(true);
+    try {
     const inv = await getInventario();
     const platIdx = inv.findIndex(
       (p) => p.plataforma.toLowerCase() === editandoCuenta.plataforma.toLowerCase()
@@ -156,6 +167,9 @@ export default function AccesosTab() {
     setMensaje({ tipo: "ok", text: "Cuenta actualizada correctamente" });
     setEditandoCuenta(null);
     await refresh();
+    } finally {
+      setGuardandoEdicion(false);
+    }
   };
 
   const handleCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -337,9 +351,17 @@ export default function AccesosTab() {
           </div>
           <button
             type="submit"
-            className="py-2.5 px-6 rounded-xl font-medium text-white bg-orange-500 hover:bg-orange-600 transition-colors"
+            disabled={guardandoCuenta}
+            className="py-2.5 px-6 rounded-xl font-medium text-white bg-orange-500 hover:bg-orange-600 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            Guardar cuenta
+            {guardandoCuenta ? (
+              <>
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Estamos procesando, espere...
+              </>
+            ) : (
+              "Guardar cuenta"
+            )}
           </button>
         </form>
       )}
@@ -527,9 +549,17 @@ export default function AccesosTab() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 px-4 rounded-xl font-medium text-white bg-orange-500 hover:bg-orange-600 transition-colors"
+                  disabled={guardandoEdicion}
+                  className="flex-1 py-2.5 px-4 rounded-xl font-medium text-white bg-orange-500 hover:bg-orange-600 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  Guardar cambios
+                  {guardandoEdicion ? (
+                    <>
+                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Estamos procesando, espere...
+                    </>
+                  ) : (
+                    "Guardar cambios"
+                  )}
                 </button>
               </div>
             </form>

@@ -5,6 +5,7 @@
  */
 
 import { supabase, isSupabaseConfigured } from "./supabase";
+import { normalizarPlataforma } from "./plataformas";
 import type {
   Plan,
   Cliente,
@@ -268,9 +269,10 @@ export async function agregarCuentaAlInventarioInSupabase(
   cuenta: CuentaPlataforma
 ): Promise<void> {
   const inv = await getInventarioFromSupabase();
-  let plat = inv.find((i) => i.plataforma.toLowerCase() === plataforma.toLowerCase());
+  const nombreBuscado = normalizarPlataforma(plataforma);
+  let plat = inv.find((i) => normalizarPlataforma(i.plataforma) === nombreBuscado);
   if (!plat) {
-    plat = { plataforma, cuentas: [] };
+    plat = { plataforma: nombreBuscado, cuentas: [] };
     inv.push(plat);
   }
   plat.cuentas.push(cuenta);
@@ -283,36 +285,38 @@ export async function asignarPerfilDisponibleInSupabase(
 ): Promise<PerfilAsignado | null> {
   if (!isSupabaseConfigured()) return null;
   const inv = await getInventarioFromSupabase();
-  const plat = inv.find((i) => i.plataforma.toLowerCase() === plataforma.toLowerCase());
-  if (!plat) return null;
+  const nombreBuscado = normalizarPlataforma(plataforma);
+  const platsCoincidentes = inv.filter((i) => normalizarPlataforma(i.plataforma) === nombreBuscado);
 
-  for (const cuenta of plat.cuentas) {
-    for (const perfil of cuenta.perfiles) {
-      if (perfil.estado === "disponible") {
-        const now = new Date();
-        const exp = new Date(now);
-        exp.setDate(exp.getDate() + 30);
-        const fechaExp = exp.toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit", year: "numeric" });
+  for (const plat of platsCoincidentes) {
+    for (const cuenta of plat.cuentas) {
+      for (const perfil of cuenta.perfiles) {
+        if (perfil.estado === "disponible") {
+          const now = new Date();
+          const exp = new Date(now);
+          exp.setDate(exp.getDate() + 30);
+          const fechaExp = exp.toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit", year: "numeric" });
 
-        await supabase
-          .from("perfiles")
-          .update({
-            estado: "ocupado",
-            cliente_correo: clienteCorreo,
-            fecha_asignacion: now.toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit", year: "numeric" }),
-            fecha_expiracion: fechaExp,
-          })
-          .eq("cuenta_plataforma_id", cuenta.id)
-          .eq("numero", perfil.numero);
+          await supabase
+            .from("perfiles")
+            .update({
+              estado: "ocupado",
+              cliente_correo: clienteCorreo,
+              fecha_asignacion: now.toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit", year: "numeric" }),
+              fecha_expiracion: fechaExp,
+            })
+            .eq("cuenta_plataforma_id", cuenta.id)
+            .eq("numero", perfil.numero);
 
-        return {
-          correo: cuenta.correo,
-          contraseña: cuenta.contraseña,
-          perfil: perfil.numero,
-          pin: perfil.pin,
-          fechaExpiracion: fechaExp,
-          fechaExpiracionISO: exp.toISOString(),
-        };
+          return {
+            correo: cuenta.correo,
+            contraseña: cuenta.contraseña,
+            perfil: perfil.numero,
+            pin: perfil.pin,
+            fechaExpiracion: fechaExp,
+            fechaExpiracionISO: exp.toISOString(),
+          };
+        }
       }
     }
   }
@@ -326,9 +330,12 @@ export async function insertarCompraInSupabase(clienteCorreo: string, compra: Co
 
 export async function contarPerfilesDisponiblesInSupabase(plataforma: string): Promise<number> {
   const inv = await getInventarioFromSupabase();
-  const plat = inv.find((i) => i.plataforma.toLowerCase() === plataforma.toLowerCase());
-  if (!plat) return 0;
-  return plat.cuentas.reduce((acc, c) => acc + c.perfiles.filter((p) => p.estado === "disponible").length, 0);
+  const nombreBuscado = normalizarPlataforma(plataforma);
+  const platsCoincidentes = inv.filter((i) => normalizarPlataforma(i.plataforma) === nombreBuscado);
+  return platsCoincidentes.reduce(
+    (acc, plat) => acc + plat.cuentas.reduce((s, c) => s + c.perfiles.filter((p) => p.estado === "disponible").length, 0),
+    0
+  );
 }
 
 // ─── Helpers ───
