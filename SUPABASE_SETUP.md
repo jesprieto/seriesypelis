@@ -53,21 +53,12 @@ SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key_aqui
 
 ### 5. Bucket de imágenes (Storage)
 
+Las imágenes de las plataformas se guardan automáticamente en Supabase Storage al crearlas o editarlas.
+
 1. En Supabase → **Storage** → **New bucket**
 2. Nombre: `images`
 3. Marca **Public bucket** (para que las imágenes sean accesibles por URL)
 4. Ejecuta `supabase/migrations/002_storage_policies.sql` en el SQL Editor para las políticas de upload
-
-O bien: en el panel Admin → pestaña **Migración**, haz clic en "Crear bucket images".
-
-### 6. Migrar datos existentes
-
-En el panel Admin → pestaña **Migración**:
-
-1. Clic en **Crear bucket images** (si no existe)
-2. Clic en **Ejecutar migración** para copiar clientes, inventario y planes desde localStorage a Supabase
-3. Los duplicados (clientes por correo) se omiten automáticamente
-4. Las imágenes base64 de plataformas se suben al bucket y se guardan como URL
 
 ---
 

@@ -20,11 +20,11 @@ export default function DashboardLayout({
   }, [isAuthenticated, isLoading, router]);
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
-      <div className="hidden md:block md:bg-gray-100 shrink-0">
+    <div className="min-h-screen flex bg-white">
+      <div className="hidden md:block md:bg-white shrink-0">
         <Sidebar />
       </div>
-      <main className="flex-1 overflow-auto bg-gray-100 pt-14 md:pt-0 pl-4 md:pl-0">{children}</main>
+      <main className="flex-1 overflow-auto bg-white pt-14 md:pt-0 pl-4 md:pl-0">{children}</main>
     </div>
   );
 }
