@@ -320,22 +320,34 @@ export async function liberarPerfilInSupabase(
     return false;
   }
 
-  const { error: errCompra } = await supabase
+  // Buscar la compra por cliente + plataforma + perfil (correo en DB puede diferir en mayúsculas)
+  const { data: comprasMatch } = await supabase
     .from("compras")
-    .update({
-      estado: "Suspendido",
-      correo: null,
-      contraseña: null,
-      perfil: null,
-      pin: null,
-    })
+    .select("id, correo")
     .eq("cliente_correo", clienteCorreo)
     .eq("plataforma", nombrePlat)
-    .eq("correo", cuentaCorreo)
     .eq("perfil", numeroPerfil);
 
-  if (errCompra) {
-    console.error("liberarPerfil update compras:", errCompra);
+  const cuentaCorreoLower = (cuentaCorreo ?? "").trim().toLowerCase();
+  const compraId = comprasMatch?.find(
+    (c) => (c.correo ?? "").trim().toLowerCase() === cuentaCorreoLower
+  )?.id;
+
+  if (compraId) {
+    const { error: errCompra } = await supabase
+      .from("compras")
+      .update({
+        estado: "Suspendido",
+        correo: null,
+        contraseña: null,
+        perfil: null,
+        pin: null,
+      })
+      .eq("id", compraId);
+
+    if (errCompra) {
+      console.error("liberarPerfil update compras:", errCompra);
+    }
   }
   return true;
 }

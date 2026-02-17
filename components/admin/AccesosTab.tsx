@@ -69,29 +69,28 @@ export default function AccesosTab() {
   const handleAgregarCuenta = async (e: React.FormEvent) => {
     e.preventDefault();
     if (guardandoCuenta) return;
-    setMensaje(null);
-    if (!formPlataforma.trim()) {
-      setMensaje({ tipo: "error", text: "Selecciona o escribe una plataforma" });
-      return;
-    }
-    if (!formCorreo.trim() || !formContraseña.trim()) {
-      setMensaje({ tipo: "error", text: "Correo y contraseña son obligatorios" });
-      return;
-    }
-    const pinsValidos = formPins.filter((p) => p.trim() !== "");
-    if (pinsValidos.length === 0) {
-      setMensaje({ tipo: "error", text: "Agrega al menos un pin de perfil" });
-      return;
-    }
-
-    const yaExiste = await correoYaExisteEnPlataforma(formPlataforma.trim(), formCorreo.trim());
-    if (yaExiste) {
-      setMensaje({ tipo: "error", text: "Ese correo ya existe en esta plataforma." });
-      return;
-    }
-
     setGuardandoCuenta(true);
+    setMensaje(null);
     try {
+      if (!formPlataforma.trim()) {
+        setMensaje({ tipo: "error", text: "Selecciona o escribe una plataforma" });
+        return;
+      }
+      if (!formCorreo.trim() || !formContraseña.trim()) {
+        setMensaje({ tipo: "error", text: "Correo y contraseña son obligatorios" });
+        return;
+      }
+      const pinsValidos = formPins.filter((p) => p.trim() !== "");
+      if (pinsValidos.length === 0) {
+        setMensaje({ tipo: "error", text: "Agrega al menos un pin de perfil" });
+        return;
+      }
+
+      const yaExiste = await correoYaExisteEnPlataforma(formPlataforma.trim(), formCorreo.trim());
+      if (yaExiste) {
+        setMensaje({ tipo: "error", text: "Ese correo ya existe en esta plataforma." });
+        return;
+      }
       const cuenta: CuentaPlataforma = {
         id: `inv-${Date.now()}`,
         correo: formCorreo.trim(),
@@ -412,7 +411,7 @@ export default function AccesosTab() {
             {guardandoCuenta ? (
               <>
                 <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Estamos procesando, espere...
+                Creando cuenta...
               </>
             ) : (
               "Guardar cuenta"
