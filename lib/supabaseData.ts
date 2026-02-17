@@ -376,3 +376,20 @@ function mapCompraToDb(c: Compra, clienteCorreo: string): Record<string, unknown
     fecha_expiracion_iso: c.fechaExpiracionISO ?? null,
   };
 }
+
+// ─── Admin (login) ───
+
+export async function validarAdminEnSupabase(usuario: string, clave: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  const { data, error } = await supabase
+    .from("admin_usuarios")
+    .select("id")
+    .eq("usuario", usuario.trim())
+    .eq("clave", clave.trim())
+    .maybeSingle();
+  if (error) {
+    console.error("validarAdmin error:", error);
+    return false;
+  }
+  return data != null;
+}

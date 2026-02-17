@@ -11,21 +11,27 @@ export default function AdminLoginPage() {
   const [usuario, setUsuario] = useState("");
   const [clave, setClave] = useState("");
   const [error, setError] = useState("");
+  const [verificando, setVerificando] = useState(false);
   const { login, isAdmin, isLoading } = useAdmin();
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (!usuario.trim() || !clave.trim()) {
       setError("Ingresa usuario y contraseña");
       return;
     }
-    const ok = login(usuario, clave);
-    if (ok) {
-      router.replace(adminPath("/dashboard"));
-    } else {
-      setError("Usuario o contraseña incorrectos");
+    setVerificando(true);
+    try {
+      const ok = await login(usuario, clave);
+      if (ok) {
+        router.replace(adminPath("/dashboard"));
+      } else {
+        setError("Usuario o contraseña incorrectos");
+      }
+    } finally {
+      setVerificando(false);
     }
   };
 
@@ -96,9 +102,10 @@ export default function AdminLoginPage() {
           </div>
           <button
             type="submit"
-            className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#FFA500] hover:bg-orange-600 transition-colors"
+            disabled={verificando}
+            className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#FFA500] hover:bg-orange-600 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            Ingresar
+            {verificando ? "Verificando..." : "Ingresar"}
           </button>
         </form>
       </div>
