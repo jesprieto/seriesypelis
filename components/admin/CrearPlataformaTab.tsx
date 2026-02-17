@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { Pencil, Trash2 } from "lucide-react";
-import { getPlanes, setPlanes, contarPerfilesDisponibles } from "@/lib/data";
+import { getPlanes, setPlanes, updatePlan, deletePlan, contarPerfilesDisponibles } from "@/lib/data";
 import { uploadPlatformImage } from "@/lib/storage";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import type { Plan } from "@/lib/mockData";
@@ -210,26 +210,35 @@ export default function CrearPlataformaTab() {
     setLoading(true);
     try {
       let imagenUrl: string | undefined = editImagen || undefined;
-      if (isSupabaseConfigured() && editImagenFile) {
-        const res = await uploadPlatformImage(editImagenFile, editando.id);
-        if ("url" in res) imagenUrl = res.url;
-        else {
-          setMensaje({ tipo: "error", text: res.error ?? "Error al subir imagen" });
-          setLoading(false);
-          return;
+      if (editImagenFile) {
+        if (isSupabaseConfigured()) {
+          const res = await uploadPlatformImage(editImagenFile, editando.id);
+          if ("url" in res) imagenUrl = res.url;
+          else {
+            setMensaje({ tipo: "error", text: res.error ?? "Error al subir imagen" });
+            setLoading(false);
+            return;
+          }
+        } else {
+          const reader = new FileReader();
+          imagenUrl = await new Promise<string>((resolve) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(editImagenFile);
+          });
         }
       }
 
-      const lista = await getPlanes();
-      const actualizados = lista.map((p) =>
-        p.id === editando.id
-          ? { ...p, nombre: editNombre.trim(), precio: valor, imagen: imagenUrl }
-          : p
-      );
-      await setPlanes(actualizados);
-      refresh();
+      const planActualizado = {
+        ...editando,
+        nombre: editNombre.trim(),
+        precio: valor,
+        imagen: imagenUrl,
+      };
+      await updatePlan(planActualizado);
+      await refresh();
       setEditando(null);
       setEditImagenFile(null);
+      setMensaje({ tipo: "ok", text: "Plataforma actualizada correctamente" });
     } finally {
       setLoading(false);
     }
@@ -237,9 +246,8 @@ export default function CrearPlataformaTab() {
 
   const handleEliminar = async (plan: Plan) => {
     if (!confirm(`¿Eliminar la plataforma "${plan.nombre}"?`)) return;
-    const lista = (await getPlanes()).filter((p) => p.id !== plan.id);
-    await setPlanes(lista);
-    refresh();
+    await deletePlan(plan.id);
+    await refresh();
   };
 
   const formatPrecio = (v: string) => {

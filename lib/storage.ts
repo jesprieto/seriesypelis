@@ -32,25 +32,24 @@ export async function uploadPlatformImage(
   if (!isSupabaseConfigured()) return { error: "Supabase no configurado" };
   const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
   const sanitizedExt = ["jpeg", "jpg", "png", "webp", "gif"].includes(ext) ? ext : "jpg";
-  const path = `plataformas/${planId}.${sanitizedExt}`;
+  const filePath = `plataformas/${planId}.${sanitizedExt}`;
 
-  const { data, error } = await supabase.storage.from(BUCKET).upload(path, file, {
+  const { error } = await supabase.storage.from(BUCKET).upload(filePath, file, {
     contentType: file.type,
     upsert: true,
     cacheControl: "3600",
   });
 
   if (error) {
-    return {
-      error:
-        error.message === "The resource already exists"
-          ? "Imagen duplicada. Intenta con otro nombre."
-          : error.message,
-    };
+    return { error: error.message };
   }
-  if (!data?.path) return { error: "No se obtuvo la URL de la imagen" };
-  const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(data.path);
-  return { url: urlData.publicUrl };
+
+  // Usar filePath local en vez de data.path para evitar URL doble-bucket
+  // en versiones de supabase-js donde data.path incluye el nombre del bucket
+  const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
+  // Agregar timestamp anti-caché para forzar recarga de la imagen
+  const cacheBuster = `?t=${Date.now()}`;
+  return { url: urlData.publicUrl + cacheBuster };
 }
 
 /**

@@ -38,11 +38,27 @@ export async function getPlanesFromSupabase(): Promise<Plan[]> {
 export async function setPlanesInSupabase(planes: Plan[]): Promise<void> {
   if (!isSupabaseConfigured()) return;
   for (const p of planes) {
-    await supabase.from("planes").upsert(
+    const { error } = await supabase.from("planes").upsert(
       { id: p.id, nombre: p.nombre, precio: p.precio, imagen: p.imagen ?? null },
       { onConflict: "id" }
     );
+    if (error) console.error("upsert plan error:", error);
   }
+}
+
+export async function updatePlanInSupabase(plan: Plan): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  const { error } = await supabase
+    .from("planes")
+    .update({ nombre: plan.nombre, precio: plan.precio, imagen: plan.imagen ?? null })
+    .eq("id", plan.id);
+  if (error) console.error("updatePlan error:", error);
+}
+
+export async function deletePlanFromSupabase(planId: string): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  const { error } = await supabase.from("planes").delete().eq("id", planId);
+  if (error) console.error("deletePlan error:", error);
 }
 
 // ─── Clientes ───

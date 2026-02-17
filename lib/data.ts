@@ -23,6 +23,24 @@ export async function setPlanes(planes: Plan[]): Promise<void> {
   }
 }
 
+export async function updatePlan(plan: Plan): Promise<void> {
+  if (isSupabaseConfigured()) {
+    await db.updatePlanInSupabase(plan);
+  } else {
+    const planes = mock.getPlanes().map((p) => (p.id === plan.id ? plan : p));
+    mock.setPlanes(planes);
+  }
+}
+
+export async function deletePlan(planId: string): Promise<void> {
+  if (isSupabaseConfigured()) {
+    await db.deletePlanFromSupabase(planId);
+  } else {
+    const planes = mock.getPlanes().filter((p) => p.id !== planId);
+    mock.setPlanes(planes);
+  }
+}
+
 // ─── Clientes ───
 
 export async function getClientes(): Promise<Cliente[]> {
