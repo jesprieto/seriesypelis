@@ -12,15 +12,17 @@ interface PlanCardProps {
 
 export default function PlanCard({ plan }: PlanCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [perfilesDisponibles, setPerfilesDisponibles] = useState(0);
+  const [perfilesDisponibles, setPerfilesDisponibles] = useState<number | null>(null);
   const [imagenRota, setImagenRota] = useState(false);
   useEffect(() => {
+    setPerfilesDisponibles(null);
     contarPerfilesDisponibles(plan.nombre).then(setPerfilesDisponibles);
   }, [plan.nombre]);
   useEffect(() => {
     setImagenRota(false);
   }, [plan.imagen]);
-  const agotado = perfilesDisponibles === 0;
+  const cargando = perfilesDisponibles === null;
+  const agotado = !cargando && perfilesDisponibles === 0;
 
   const formattedPrecio = new Intl.NumberFormat("es-CO", {
     style: "currency",
@@ -49,15 +51,17 @@ export default function PlanCard({ plan }: PlanCardProps) {
             />
           )}
           <button
-            onClick={() => !agotado && setModalOpen(true)}
-            disabled={agotado}
+            onClick={() => !agotado && !cargando && setModalOpen(true)}
+            disabled={agotado || cargando}
             className={`absolute bottom-2 right-2 py-2 px-4 rounded-lg font-medium text-sm shadow-md transition-colors ${
-              agotado
-                ? "bg-gray-400 text-white cursor-not-allowed"
-                : "bg-orange-500 hover:bg-orange-600 text-white hover:animate-bounce-subtle"
+              cargando
+                ? "bg-gray-300 text-white cursor-wait"
+                : agotado
+                  ? "bg-gray-400 text-white cursor-not-allowed"
+                  : "bg-orange-500 hover:bg-orange-600 text-white hover:animate-bounce-subtle"
             }`}
           >
-            {agotado ? "Agotado" : "Comprar"}
+            {cargando ? "..." : agotado ? "Agotado" : "Comprar"}
           </button>
         </div>
         <div className="p-4">
