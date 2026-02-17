@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAdmin } from "@/context/AdminContext";
+import { adminPath } from "@/lib/adminPaths";
 
 export default function AdminPage() {
   const { isAdmin, isLoading } = useAdmin();
@@ -11,9 +12,9 @@ export default function AdminPage() {
   useEffect(() => {
     if (isLoading) return;
     if (isAdmin) {
-      router.replace("/admin/dashboard");
+      router.replace(adminPath("/dashboard"));
     } else {
-      router.replace("/admin/login");
+      router.replace(adminPath("/login"));
     }
   }, [isAdmin, isLoading, router]);
 

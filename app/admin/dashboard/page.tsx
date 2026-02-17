@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAdmin } from "@/context/AdminContext";
-import { LogOut, LayoutDashboard } from "lucide-react";
+import { adminPath } from "@/lib/adminPaths";
+import { LogOut } from "lucide-react";
 import CrearPlataformaTab from "@/components/admin/CrearPlataformaTab";
 import ClientesTab from "@/components/admin/ClientesTab";
 import AccesosTab from "@/components/admin/AccesosTab";
@@ -17,13 +18,13 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     if (!isLoading && !isAdmin) {
-      router.replace("/admin/login");
+      router.replace(adminPath("/login"));
     }
   }, [isAdmin, isLoading, router]);
 
   const handleLogout = () => {
     logout();
-    router.replace("/admin/login");
+    router.replace(adminPath("/login"));
   };
 
   if (isLoading) {
@@ -46,19 +47,7 @@ export default function AdminDashboardPage() {
     <div className="min-h-screen bg-white flex flex-col">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <a
-              href={`${process.env.NEXT_PUBLIC_MAIN_SITE_URL || "https://seriesypelis.lat"}/dashboard/planes`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-            >
-              <LayoutDashboard className="w-5 h-5" />
-              <span className="text-sm font-medium">Ir al sitio</span>
-            </a>
-            <span className="text-gray-300">|</span>
-            <h1 className="text-xl font-bold text-gray-900">Panel Admin</h1>
-          </div>
+          <h1 className="text-xl font-bold text-gray-900">Panel Admin</h1>
           <button
             onClick={handleLogout}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"

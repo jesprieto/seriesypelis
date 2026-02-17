@@ -15,23 +15,50 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Si entran al dominio principal por /admin → redirigir al subdominio admin
+  // Dominio principal: /admin* → redirigir al subdominio admin (con rutas cortas)
   if (isMain && pathname.startsWith("/admin")) {
     const url = new URL(request.url);
     url.host = ADMIN_HOST;
     url.port = "";
     url.protocol = "https:";
+    if (pathname === "/admin" || pathname === "/admin/") {
+      url.pathname = "/dashboard";
+    } else if (pathname === "/admin/login") {
+      url.pathname = "/login";
+    } else if (pathname === "/admin/dashboard") {
+      url.pathname = "/dashboard";
+    } else {
+      url.pathname = pathname.replace(/^\/admin/, "") || "/dashboard";
+    }
     return NextResponse.redirect(url);
   }
 
-  // Si entran al subdominio admin en la raíz / → mostrar entrada admin
-  if (isAdmin && pathname === "/") {
-    return NextResponse.redirect(new URL("/admin", request.url));
+  // Subdominio admin: rutas cortas
+  if (isAdmin) {
+    if (pathname === "/") {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+    if (pathname === "/dashboard") {
+      return NextResponse.rewrite(new URL("/admin/dashboard", request.url));
+    }
+    if (pathname === "/login") {
+      return NextResponse.rewrite(new URL("/admin/login", request.url));
+    }
+    // Redirigir /admin, /admin/login, /admin/dashboard a la versión corta
+    if (pathname === "/admin" || pathname === "/admin/") {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+    if (pathname === "/admin/login") {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+    if (pathname === "/admin/dashboard") {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/", "/admin", "/admin/:path*"],
+  matcher: ["/", "/login", "/dashboard", "/admin", "/admin/:path*"],
 };
