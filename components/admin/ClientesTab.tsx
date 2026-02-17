@@ -5,15 +5,22 @@ import { getClientes, actualizarCliente, getClienteByCorreo } from "@/lib/data";
 import type { Cliente } from "@/lib/mockData";
 import { getPlataformasActivas } from "@/lib/utils";
 import ClienteModal from "./ClienteModal";
+import ProcesandoSpinner from "@/components/ui/ProcesandoSpinner";
 
 export default function ClientesTab() {
   const [clientes, setClientesState] = useState<Cliente[]>([]);
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [cargando, setCargando] = useState(true);
 
   const refresh = async () => {
-    const data = await getClientes();
-    setClientesState(data);
+    setCargando(true);
+    try {
+      const data = await getClientes();
+      setClientesState(data);
+    } finally {
+      setCargando(false);
+    }
   };
 
   useEffect(() => {
@@ -55,6 +62,9 @@ export default function ClientesTab() {
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Clientes</h2>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        {cargando ? (
+          <ProcesandoSpinner />
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[700px]">
             <thead>
@@ -122,6 +132,7 @@ export default function ClientesTab() {
             </tbody>
           </table>
         </div>
+        )}
       </div>
 
       <ClienteModal

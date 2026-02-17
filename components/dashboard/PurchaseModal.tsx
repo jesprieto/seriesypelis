@@ -21,32 +21,40 @@ export default function PurchaseModal({
   const [compraExitosa, setCompraExitosa] = useState<Compra | null>(null);
   const [disponibles, setDisponibles] = useState(0);
   const [error, setError] = useState("");
+  const [comprando, setComprando] = useState(false);
 
   useEffect(() => {
     if (isOpen && plan) {
       contarPerfilesDisponibles(plan.nombre).then(setDisponibles);
       setError("");
+      setComprando(false);
     }
   }, [isOpen, plan]);
 
   const handleClose = () => {
     setCompraExitosa(null);
     setError("");
+    setComprando(false);
     onClose();
   };
 
   const handleComprar = async () => {
-    if (!plan) return;
+    if (!plan || comprando) return;
     setError("");
     if (saldo < plan.precio) {
       setError("Saldo insuficiente, ve al botón recargar y compra más saldo.");
       return;
     }
-    const nuevaCompra = await comprarPlan(plan);
-    if (nuevaCompra) {
-      setCompraExitosa(nuevaCompra);
-    } else {
-      setError("No hay perfiles disponibles para esta plataforma");
+    setComprando(true);
+    try {
+      const nuevaCompra = await comprarPlan(plan);
+      if (nuevaCompra) {
+        setCompraExitosa(nuevaCompra);
+      } else {
+        setError("No hay perfiles disponibles para esta plataforma");
+      }
+    } finally {
+      setComprando(false);
     }
   };
 
@@ -111,10 +119,17 @@ export default function PurchaseModal({
           </button>
           <button
             onClick={handleComprar}
-            disabled={sinStock}
-            className="flex-1 py-2.5 px-4 rounded-xl font-medium text-white bg-orange-500 hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={sinStock || comprando}
+            className="flex-1 py-2.5 px-4 rounded-xl font-medium text-white bg-orange-500 hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[42px]"
           >
-            Comprar
+            {comprando ? (
+              <>
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Procesando...
+              </>
+            ) : (
+              "Comprar"
+            )}
           </button>
         </div>
       </div>

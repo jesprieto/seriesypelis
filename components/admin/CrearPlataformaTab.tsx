@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { Pencil, Trash2 } from "lucide-react";
 import { getPlanes, setPlanes, updatePlan, deletePlan, contarPerfilesDisponibles } from "@/lib/data";
+import ProcesandoSpinner from "@/components/ui/ProcesandoSpinner";
 import { uploadPlatformImage } from "@/lib/storage";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import type { Plan } from "@/lib/mockData";
@@ -87,12 +88,18 @@ export default function CrearPlataformaTab() {
   const [editImagen, setEditImagen] = useState<string | null>(null);
   const [editImagenFile, setEditImagenFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [cargandoPlanes, setCargandoPlanes] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileRef = useRef<HTMLInputElement>(null);
 
   const refresh = async () => {
-    const data = await getPlanes();
-    setPlanesState(data);
+    setCargandoPlanes(true);
+    try {
+      const data = await getPlanes();
+      setPlanesState(data);
+    } finally {
+      setCargandoPlanes(false);
+    }
   };
 
   useEffect(() => {
@@ -344,9 +351,17 @@ export default function CrearPlataformaTab() {
 
           <button
             type="submit"
-            className="w-full py-3 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 transition-colors"
+            disabled={loading}
+            className="w-full py-3 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            Crear plataforma
+            {loading ? (
+              <>
+                <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Procesando...
+              </>
+            ) : (
+              "Crear plataforma"
+            )}
           </button>
         </form>
       </div>
@@ -354,7 +369,9 @@ export default function CrearPlataformaTab() {
       <div className="flex-1 min-w-0">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Plataformas creadas</h2>
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          {planes.length === 0 ? (
+          {cargandoPlanes ? (
+            <ProcesandoSpinner />
+          ) : planes.length === 0 ? (
             <p className="py-12 text-center text-gray-500 text-sm">
               No hay plataformas creadas. Crea una usando el formulario de la izquierda.
             </p>
@@ -462,9 +479,17 @@ export default function CrearPlataformaTab() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600"
+                  disabled={loading}
+                  className="flex-1 py-2.5 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  Guardar
+                  {loading ? (
+                    <>
+                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Procesando...
+                    </>
+                  ) : (
+                    "Guardar"
+                  )}
                 </button>
               </div>
             </form>

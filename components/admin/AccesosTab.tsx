@@ -8,6 +8,7 @@ import {
 } from "@/lib/data";
 import type { InventarioPlataforma, CuentaPlataforma, Perfil } from "@/lib/mockData";
 import { ChevronDown, ChevronRight, Plus, Upload, Pencil, Search } from "lucide-react";
+import ProcesandoSpinner from "@/components/ui/ProcesandoSpinner";
 
 function crearPerfilesVacios(pins: string[]): Perfil[] {
   const perfiles: Perfil[] = [];
@@ -23,6 +24,7 @@ function crearPerfilesVacios(pins: string[]): Perfil[] {
 
 export default function AccesosTab() {
   const [inventario, setInventarioState] = useState<InventarioPlataforma[]>([]);
+  const [cargando, setCargando] = useState(true);
   const [expandido, setExpandido] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [formPlataforma, setFormPlataforma] = useState("");
@@ -41,8 +43,13 @@ export default function AccesosTab() {
   const csvRef = useRef<HTMLInputElement>(null);
 
   const refresh = async () => {
-    const data = await getInventario();
-    setInventarioState(data);
+    setCargando(true);
+    try {
+      const data = await getInventario();
+      setInventarioState(data);
+    } finally {
+      setCargando(false);
+    }
   };
 
   useEffect(() => {
@@ -339,7 +346,11 @@ export default function AccesosTab() {
         </form>
       )}
 
-      {inventario.length === 0 ? (
+      {cargando ? (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <ProcesandoSpinner />
+        </div>
+      ) : inventario.length === 0 ? (
         <p className="text-gray-500 text-sm">No hay inventario registrado</p>
       ) : inventarioFiltrado.length === 0 ? (
         <p className="text-gray-500 text-sm py-4">
