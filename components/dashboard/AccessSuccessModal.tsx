@@ -29,7 +29,7 @@ function textoParaCopiar(compra: Compra, soloCodigo: boolean = false): string {
 }
 
 const MENSAJE_WHATSAPP =
-  "Copia estos datos y envíalos por WhatsApp al administrador para que te haga la conexión con tus accesos actuales.";
+  "Copia estos datos, dirígete a la opción \"Soporte\" en el menú y pégalos en el WhatsApp de Ventas. Nuestro equipo te responderá con tus accesos a la brevedad.";
 
 export default function AccessSuccessModal({ compra, onClose }: AccessSuccessModalProps) {
   const [copiado, setCopiado] = useState(false);
@@ -105,7 +105,7 @@ export default function AccessSuccessModal({ compra, onClose }: AccessSuccessMod
         </div>
 
         {esConexionWhatsApp ? (
-          <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 mb-4">
+          <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 mb-4 text-center">
             <p className="text-sm text-gray-700 font-medium leading-relaxed">
               {MENSAJE_WHATSAPP}
             </p>

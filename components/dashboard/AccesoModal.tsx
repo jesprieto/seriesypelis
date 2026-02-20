@@ -12,7 +12,7 @@ interface AccesoModalProps {
 }
 
 const MENSAJE_WHATSAPP =
-  "Copia estos datos y envíalos por WhatsApp al administrador para que te haga la conexión con tus accesos actuales.";
+  "Copia estos datos, dirígete a la opción \"Soporte\" en el menú y pégalos en el WhatsApp de Ventas. Nuestro equipo te responderá con tus accesos a la brevedad.";
 
 export default function AccesoModal({ compra, isOpen, onClose }: AccesoModalProps) {
   const [copiado, setCopiado] = useState(false);
@@ -58,7 +58,7 @@ export default function AccesoModal({ compra, isOpen, onClose }: AccesoModalProp
             </p>
           </div>
         ) : esConexionWhatsApp ? (
-          <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 mb-6">
+          <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 mb-6 text-center">
             <p className="text-sm text-gray-700 font-medium leading-relaxed">
               {MENSAJE_WHATSAPP}
             </p>

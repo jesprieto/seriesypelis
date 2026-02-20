@@ -23,8 +23,14 @@ export default function LoginForm() {
     <div className="w-full max-w-[320px] sm:max-w-sm mx-4 flex justify-center">
       <form
         onSubmit={handleSubmit}
-        className="w-full bg-gray-100/80 backdrop-blur-md rounded-2xl p-5 sm:p-6 shadow-lg border border-gray-200/50"
+        className="relative w-full rounded-2xl p-5 sm:p-6 shadow-xl border border-white/20 overflow-hidden"
       >
+        {/* Fondo tipo liquid crystal - solo el bg de la tarjeta, sin afectar logo/campos/botones */}
+        <div
+          className="absolute inset-0 rounded-2xl backdrop-blur-[28px] bg-white/10"
+          style={{ zIndex: -1 }}
+          aria-hidden
+        />
         <LoginLogo compact />
         <div className="space-y-3">
           <div className="relative">
