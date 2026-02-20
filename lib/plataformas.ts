@@ -54,3 +54,12 @@ export function normalizarPlataforma(nombre: string): string {
   const key = nombre.trim().toLowerCase();
   return PLATAFORMA_ALIASES[key] ?? nombre.trim();
 }
+
+/** Plataformas que requieren conexión por WhatsApp (no muestran enlaces/accesos) */
+const PLATAFORMAS_CONEXION_WHATSAPP = ["Spotify", "Youtube Premium"];
+
+export function requiereConexionWhatsApp(plataforma: string): boolean {
+  return PLATAFORMAS_CONEXION_WHATSAPP.some(
+    (p) => normalizarPlataforma(plataforma) === p
+  );
+}

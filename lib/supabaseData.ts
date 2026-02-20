@@ -32,7 +32,10 @@ export async function getPlanesFromSupabase(): Promise<Plan[]> {
     id: r.id,
     nombre: r.nombre,
     precio: r.precio,
+    precioMayorista: r.precio_mayorista != null ? Number(r.precio_mayorista) : undefined,
+    precioDetal: r.precio_detal != null ? Number(r.precio_detal) : undefined,
     imagen: r.imagen ?? undefined,
+    promo: r.promo === true,
   }));
 }
 
@@ -40,7 +43,15 @@ export async function setPlanesInSupabase(planes: Plan[]): Promise<void> {
   if (!isSupabaseConfigured()) return;
   for (const p of planes) {
     const { error } = await supabase.from("planes").upsert(
-      { id: p.id, nombre: p.nombre, precio: p.precio, imagen: p.imagen ?? null },
+      {
+        id: p.id,
+        nombre: p.nombre,
+        precio: p.precio,
+        precio_mayorista: p.precioMayorista ?? null,
+        precio_detal: p.precioDetal ?? null,
+        imagen: p.imagen ?? null,
+        promo: p.promo ?? false,
+      },
       { onConflict: "id" }
     );
     if (error) console.error("upsert plan error:", error);
@@ -52,7 +63,14 @@ export async function updatePlanInSupabase(plan: Plan): Promise<void> {
   if (!isSupabaseConfigured()) return;
   const { error } = await supabase
     .from("planes")
-    .update({ nombre: plan.nombre, precio: plan.precio, imagen: plan.imagen ?? null })
+    .update({
+      nombre: plan.nombre,
+      precio: plan.precio,
+      precio_mayorista: plan.precioMayorista ?? null,
+      precio_detal: plan.precioDetal ?? null,
+      imagen: plan.imagen ?? null,
+      promo: plan.promo ?? false,
+    })
     .eq("id", plan.id);
   if (error) console.error("updatePlan error:", error);
   await ensureInventarioPlataformaExistsInSupabase(plan.nombre);
@@ -95,6 +113,7 @@ export async function getClientesFromSupabase(): Promise<Cliente[]> {
       whatsapp: c.whatsapp ?? undefined,
       avatarEmoji: c.avatar_emoji ?? undefined,
       saldo: c.saldo ?? 0,
+      perfilPrecio: (c.perfil_precio as "mayorista" | "detal") ?? undefined,
       historialCompras: historial,
     };
   });
@@ -144,6 +163,7 @@ export async function actualizarClienteInSupabase(
       whatsapp: updated.whatsapp ?? cliente.whatsapp,
       avatar_emoji: updated.avatarEmoji ?? cliente.avatarEmoji,
       saldo: updated.saldo ?? cliente.saldo,
+      perfil_precio: updated.perfilPrecio ?? cliente.perfilPrecio ?? null,
     })
     .eq("correo", correo);
 
@@ -466,11 +486,29 @@ export async function contarPerfilesDisponiblesInSupabase(plataforma: string): P
   );
 }
 
+/** Obtiene disponibilidad de todas las plataformas en una sola llamada (optimizado) */
+export async function getDisponibilidadTodasPlataformasInSupabase(): Promise<Record<string, number>> {
+  if (!isSupabaseConfigured()) return {};
+  const inv = await getInventarioFromSupabase();
+  const result: Record<string, number> = {};
+  for (const plat of inv) {
+    const nombre = normalizarPlataforma(plat.plataforma);
+    const count = plat.cuentas.reduce(
+      (s, c) => s + c.perfiles.filter((p) => p.estado === "disponible").length,
+      0
+    );
+    result[nombre] = (result[nombre] ?? 0) + count;
+  }
+  return result;
+}
+
 // ─── Helpers ───
 
 function mapCompraFromDb(r: Record<string, unknown>): Compra {
+  const codigoHexRaw = r.codigo_hex;
   return {
     codigo: String(r.codigo),
+    codigoHex: typeof codigoHexRaw === "string" && codigoHexRaw ? codigoHexRaw : String(r.id || r.codigo).slice(0, 12).toUpperCase(),
     estado: (r.estado as Compra["estado"]) ?? "Disponible",
     fechaCompra: String(r.fecha_compra ?? ""),
     fechaCompraISO: r.fecha_compra_iso as string | undefined,
@@ -489,6 +527,7 @@ function mapCompraFromDb(r: Record<string, unknown>): Compra {
 function mapCompraToDb(c: Compra, clienteCorreo: string): Record<string, unknown> {
   return {
     codigo: c.codigo,
+    codigo_hex: c.codigoHex ?? null,
     cliente_correo: clienteCorreo,
     plataforma: c.plataforma,
     estado: c.estado,

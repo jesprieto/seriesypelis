@@ -1,34 +1,65 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import { useAuth } from "@/context/AuthContext";
+import { normalizarPlataforma } from "@/lib/plataformas";
+import { getPrecioEfectivo } from "@/lib/preciosDefault";
 import type { Plan } from "@/lib/types";
 import { contarPerfilesDisponibles } from "@/lib/data";
 import PurchaseModal from "./PurchaseModal";
 
 interface PlanCardProps {
   plan: Plan;
+  /** Disponibilidad pre-cargada (evita llamada individual) */
+  disponibilidadPrecargada?: Record<string, number>;
 }
 
-export default function PlanCard({ plan }: PlanCardProps) {
+export default function PlanCard({ plan, disponibilidadPrecargada }: PlanCardProps) {
+  const { perfilPrecio } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
   const [perfilesDisponibles, setPerfilesDisponibles] = useState<number | null>(null);
+  const [mostrarCargando, setMostrarCargando] = useState(false);
   const [imagenRota, setImagenRota] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
+    if (disponibilidadPrecargada) {
+      const key = normalizarPlataforma(plan.nombre);
+      const val = disponibilidadPrecargada[key];
+      setPerfilesDisponibles(typeof val === "number" ? val : 0);
+      return;
+    }
     setPerfilesDisponibles(null);
-    contarPerfilesDisponibles(plan.nombre).then(setPerfilesDisponibles);
-  }, [plan.nombre]);
+    setMostrarCargando(false);
+    timeoutRef.current = setTimeout(() => setMostrarCargando(true), 2000);
+    contarPerfilesDisponibles(plan.nombre).then((n) => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      setPerfilesDisponibles(n);
+    });
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [plan.nombre, disponibilidadPrecargada]);
   useEffect(() => {
     setImagenRota(false);
   }, [plan.imagen]);
   const cargando = perfilesDisponibles === null;
   const agotado = !cargando && perfilesDisponibles === 0;
+  const textoBoton = cargando
+    ? mostrarCargando
+      ? "Cargando"
+      : "..."
+    : agotado
+      ? "Agotado"
+      : "Comprar";
 
+  const precioEfectivo = getPrecioEfectivo(plan, perfilPrecio);
   const formattedPrecio = new Intl.NumberFormat("es-CO", {
     style: "currency",
     currency: "COP",
     minimumFractionDigits: 0,
-  }).format(plan.precio);
+  }).format(precioEfectivo);
 
   return (
     <>
@@ -61,7 +92,7 @@ export default function PlanCard({ plan }: PlanCardProps) {
                   : "bg-orange-500 hover:bg-orange-600 text-white hover:animate-bounce-subtle"
             }`}
           >
-            {cargando ? "..." : agotado ? "Agotado" : "Comprar"}
+            {textoBoton}
           </button>
         </div>
         <div className="p-4">
@@ -72,7 +103,7 @@ export default function PlanCard({ plan }: PlanCardProps) {
         </div>
       </div>
       <PurchaseModal
-        plan={plan}
+        plan={{ ...plan, precio: precioEfectivo }}
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
       />

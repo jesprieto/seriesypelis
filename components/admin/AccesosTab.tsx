@@ -9,7 +9,7 @@ import {
   liberarPerfil,
   eliminarCuentaDelInventario,
 } from "@/lib/data";
-import { PLATAFORMAS_OFICIALES, normalizarPlataforma } from "@/lib/plataformas";
+import { PLATAFORMAS_OFICIALES, normalizarPlataforma, requiereConexionWhatsApp } from "@/lib/plataformas";
 import type { InventarioPlataforma, CuentaPlataforma, Perfil } from "@/lib/types";
 import { ChevronDown, ChevronRight, Plus, Upload, Pencil, Search, Trash2 } from "lucide-react";
 import ProcesandoSpinner from "@/components/ui/ProcesandoSpinner";
@@ -35,6 +35,7 @@ export default function AccesosTab() {
   const [formCorreo, setFormCorreo] = useState("");
   const [formContraseña, setFormContraseña] = useState("");
   const [formPins, setFormPins] = useState<string[]>(["", "", "", "", "", ""]);
+  const [formCuposManuales, setFormCuposManuales] = useState("10");
   const [mensaje, setMensaje] = useState<{ tipo: "ok" | "error"; text: string } | null>(null);
   const [editandoCuenta, setEditandoCuenta] = useState<{
     plataforma: string;
@@ -75,37 +76,66 @@ export default function AccesosTab() {
     setMensaje(null);
     try {
       if (!formPlataforma.trim()) {
-        setMensaje({ tipo: "error", text: "Selecciona o escribe una plataforma" });
-        return;
-      }
-      if (!formCorreo.trim() || !formContraseña.trim()) {
-        setMensaje({ tipo: "error", text: "Correo y contraseña son obligatorios" });
-        return;
-      }
-      const pinsValidos = formPins.filter((p) => p.trim() !== "");
-      if (pinsValidos.length === 0) {
-        setMensaje({ tipo: "error", text: "Agrega al menos un pin de perfil" });
+        setMensaje({ tipo: "error", text: "Selecciona una plataforma" });
         return;
       }
 
-      const yaExiste = await correoYaExisteEnPlataforma(formPlataforma.trim(), formCorreo.trim());
-      if (yaExiste) {
-        setMensaje({ tipo: "error", text: "Ese correo ya existe en esta plataforma." });
-        return;
-      }
-      const cuenta: CuentaPlataforma = {
-        id: `inv-${Date.now()}`,
-        correo: formCorreo.trim(),
-        contraseña: formContraseña.trim(),
-        perfiles: crearPerfilesVacios(formPins),
-      };
-      await agregarCuentaAlInventario(formPlataforma.trim(), cuenta);
+      const esManual = requiereConexionWhatsApp(formPlataforma.trim());
 
-      setFormCorreo("");
-      setFormContraseña("");
-      setFormPins(["", "", "", "", "", ""]);
+      if (esManual) {
+        // Spotify/YouTube: solo cupos, sin correo/contraseña
+        const n = parseInt(formCuposManuales.replace(/\D/g, ""), 10) || 1;
+        if (n < 1 || n > 999) {
+          setMensaje({ tipo: "error", text: "Cantidad de cupos entre 1 y 999" });
+          return;
+        }
+        const perfiles: Perfil[] = [];
+        for (let i = 1; i <= n; i++) {
+          perfiles.push({
+            numero: i,
+            pin: String(i).padStart(3, "0"),
+            estado: "disponible",
+          });
+        }
+        const cuenta: CuentaPlataforma = {
+          id: `inv-manual-${Date.now()}`,
+          correo: `manual-${Date.now()}`,
+          contraseña: "-",
+          perfiles,
+        };
+        await agregarCuentaAlInventario(formPlataforma.trim(), cuenta);
+        setFormCuposManuales("10");
+      } else {
+        // Resto de plataformas: correo, contraseña y pins obligatorios
+        if (!formCorreo.trim() || !formContraseña.trim()) {
+          setMensaje({ tipo: "error", text: "Correo y contraseña son obligatorios" });
+          return;
+        }
+        const pinsValidos = formPins.filter((p) => p.trim() !== "");
+        if (pinsValidos.length === 0) {
+          setMensaje({ tipo: "error", text: "Agrega al menos un pin de perfil" });
+          return;
+        }
+
+        const yaExiste = await correoYaExisteEnPlataforma(formPlataforma.trim(), formCorreo.trim());
+        if (yaExiste) {
+          setMensaje({ tipo: "error", text: "Ese correo ya existe en esta plataforma." });
+          return;
+        }
+        const cuenta: CuentaPlataforma = {
+          id: `inv-${Date.now()}`,
+          correo: formCorreo.trim(),
+          contraseña: formContraseña.trim(),
+          perfiles: crearPerfilesVacios(formPins),
+        };
+        await agregarCuentaAlInventario(formPlataforma.trim(), cuenta);
+        setFormCorreo("");
+        setFormContraseña("");
+        setFormPins(["", "", "", "", "", ""]);
+      }
+
       setShowForm(false);
-      setMensaje({ tipo: "ok", text: "Cuenta agregada correctamente" });
+      setMensaje({ tipo: "ok", text: esManual ? "Cupos agregados correctamente (acceso manual)" : "Cuenta agregada correctamente" });
       await refresh();
     } finally {
       setGuardandoCuenta(false);
@@ -380,27 +410,47 @@ export default function AccesosTab() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Correo</label>
-              <input
-                type="email"
-                value={formCorreo}
-                onChange={(e) => setFormCorreo(e.target.value)}
-                placeholder="correo@ejemplo.com"
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-              <input
-                type="text"
-                value={formContraseña}
-                onChange={(e) => setFormContraseña(e.target.value)}
-                placeholder="contraseña"
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
-              />
-            </div>
+            {!requiereConexionWhatsApp(formPlataforma) && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Correo</label>
+                  <input
+                    type="email"
+                    value={formCorreo}
+                    onChange={(e) => setFormCorreo(e.target.value)}
+                    placeholder="correo@ejemplo.com"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                  <input
+                    type="text"
+                    value={formContraseña}
+                    onChange={(e) => setFormContraseña(e.target.value)}
+                    placeholder="contraseña"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
+                  />
+                </div>
+              </>
+            )}
+            {requiereConexionWhatsApp(formPlataforma) && formPlataforma && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad de cupos</label>
+                <input
+                  type="text"
+                  value={formCuposManuales}
+                  onChange={(e) => setFormCuposManuales(e.target.value.replace(/\D/g, "").slice(0, 3) || "1")}
+                  placeholder="10"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Los accesos se dan de forma manual. Estos cupos permiten que los clientes compren; tú conectas después por WhatsApp.
+                </p>
+              </div>
+            )}
           </div>
+          {!requiereConexionWhatsApp(formPlataforma) && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Pines de perfiles (hasta 6)</label>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
@@ -422,6 +472,7 @@ export default function AccesosTab() {
               ))}
             </div>
           </div>
+          )}
           <button
             type="submit"
             disabled={guardandoCuenta}

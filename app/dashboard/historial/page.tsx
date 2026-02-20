@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import HeaderCards from "@/components/dashboard/HeaderCards";
 import AccesoModal from "@/components/dashboard/AccesoModal";
 import { esCompraDisponible } from "@/lib/utils";
+import { requiereConexionWhatsApp } from "@/lib/plataformas";
 import type { Compra } from "@/lib/types";
 
 function estadoCalculado(compra: Compra): Compra["estado"] {
@@ -13,7 +14,9 @@ function estadoCalculado(compra: Compra): Compra["estado"] {
 }
 
 function compraMuestraDatosAcceso(compra: Compra): boolean {
-  return compra.estado !== "Suspendido";
+  if (compra.estado === "Suspendido") return false;
+  if (requiereConexionWhatsApp(compra.plataforma)) return false;
+  return true;
 }
 
 export default function HistorialPage() {
@@ -55,7 +58,7 @@ export default function HistorialPage() {
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
-                  Código
+                  Código hex
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">
                   Estado
@@ -96,13 +99,13 @@ export default function HistorialPage() {
               ) : (
                 comprasConEstado.map((compra, index) => (
                   <tr
-                    key={`${compra.codigo}-${compra.fechaCompra}-${index}`}
+                    key={`${compra.codigoHex ?? compra.codigo}-${compra.fechaCompra}-${index}`}
                     className={`border-b border-gray-100 last:border-0 ${
                       index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
                     }`}
                   >
-                    <td className="py-3 px-4 text-sm text-gray-900">
-                      {compra.codigo}
+                    <td className="py-3 px-4 text-sm text-gray-900 font-mono">
+                      {compra.codigoHex ?? compra.codigo}
                     </td>
                     <td className="py-3 px-4">
                       <span

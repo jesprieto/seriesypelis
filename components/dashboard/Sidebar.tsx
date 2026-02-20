@@ -4,7 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Tag, Clock, Settings, Maximize2, Menu, X, LogOut } from "lucide-react";
+import { Tag, Clock, Settings, Maximize2, Menu, X, LogOut, MessageCircle } from "lucide-react";
+
+const WHATSAPP_SOPORTE = "573146151825";
 import { useAuth } from "@/context/AuthContext";
 import { getAvatarParaCliente } from "@/lib/types";
 
@@ -89,7 +91,17 @@ export default function Sidebar() {
           <Maximize2 className="w-5 h-5 text-gray-500" />
         </div>
       </div>
-      <div className="p-2">
+      <div className="p-2 space-y-1">
+        <a
+          href={`https://wa.me/${WHATSAPP_SOPORTE.replace(/\s/g, "")}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-green-50 hover:text-green-700 transition-colors"
+          onClick={() => setMobileOpen(false)}
+        >
+          <MessageCircle className="w-5 h-5 shrink-0" />
+          <span className="text-sm font-medium">Soporte</span>
+        </a>
         <Link
           href="/dashboard/configuracion"
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-200 transition-colors"

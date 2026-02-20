@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from "react";
 import { DEFAULT_SALDO, getAvatarParaCliente } from "@/lib/types";
+import { getPrecioEfectivo } from "@/lib/preciosDefault";
 import {
   getClienteByCorreo,
   actualizarCliente,
@@ -9,13 +10,26 @@ import {
   insertarCompra,
   registrarCliente,
 } from "@/lib/data";
-import type { Compra, Plan } from "@/lib/types";
+import type { Compra, Plan, PerfilPrecio } from "@/lib/types";
 
 const STORAGE_KEY = "pelis-series-auth";
 const PERFIL_KEY_PREFIX = "pelis-series-perfil-";
 
 function generateCodigo(): string {
   return String(Math.floor(10000 + Math.random() * 90000));
+}
+
+function generateCodigoHex(): string {
+  const arr = new Uint8Array(6);
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    crypto.getRandomValues(arr);
+  } else {
+    for (let i = 0; i < 6; i++) arr[i] = Math.floor(Math.random() * 256);
+  }
+  return Array.from(arr)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .toUpperCase();
 }
 
 function generateInformacion(userEmail: string): string {
@@ -41,6 +55,7 @@ interface AuthState {
   nombrePerfil: string | null;
   nombreCliente: string | null;
   avatarEmoji: string | null;
+  perfilPrecio: PerfilPrecio;
 }
 
 interface AuthContextType extends AuthState {
@@ -48,7 +63,12 @@ interface AuthContextType extends AuthState {
   login: (correo: string, clave: string) => void;
   logout: () => void;
   comprarPlan: (plan: Plan) => Promise<Compra | null>;
-  updatePerfil: (opciones: { nombre?: string; contraseñaActual?: string; nuevaContraseña?: string }) => Promise<{ ok: boolean; error?: string }>;
+  updatePerfil: (opciones: {
+    nombre?: string;
+    contraseñaActual?: string;
+    nuevaContraseña?: string;
+    perfilPrecio?: PerfilPrecio;
+  }) => Promise<{ ok: boolean; error?: string }>;
   refreshCliente: () => Promise<void>;
 }
 
@@ -60,6 +80,7 @@ const initialState: AuthState = {
   nombrePerfil: null,
   nombreCliente: null,
   avatarEmoji: null,
+  perfilPrecio: "detal",
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -90,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           nombrePerfil: nombrePerfilVal,
           nombreCliente: parsed.nombreCliente ?? null,
           avatarEmoji: parsed.avatarEmoji ?? null,
+          perfilPrecio: parsed.perfilPrecio === "mayorista" ? "mayorista" : "detal",
         });
       } catch {
         // invalid stored data
@@ -103,14 +125,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (state.isAuthenticated) {
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({
-          user: state.user,
-          saldo: state.saldo,
-          historialCompras: state.historialCompras,
-          nombrePerfil: state.nombrePerfil,
-          nombreCliente: state.nombreCliente,
-          avatarEmoji: state.avatarEmoji,
-        })
+      JSON.stringify({
+        user: state.user,
+        saldo: state.saldo,
+        historialCompras: state.historialCompras,
+        nombrePerfil: state.nombrePerfil,
+        nombreCliente: state.nombreCliente,
+        avatarEmoji: state.avatarEmoji,
+        perfilPrecio: state.perfilPrecio,
+      })
       );
     } else {
       localStorage.removeItem(STORAGE_KEY);
@@ -127,6 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         historialCompras: cliente.historialCompras,
         nombreCliente: cliente.nombre,
         avatarEmoji: cliente.avatarEmoji ?? prev.avatarEmoji,
+        perfilPrecio: cliente.perfilPrecio ?? "detal",
       }));
     }
   };
@@ -163,6 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         nombrePerfil: savedNombre,
         nombreCliente: cliente.nombre,
         avatarEmoji: avatar,
+        perfilPrecio: cliente.perfilPrecio ?? "detal",
       });
     } else {
       const newId = String(Date.now());
@@ -178,6 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         nombrePerfil: null,
         nombreCliente: nombre,
         avatarEmoji: emoji,
+        perfilPrecio: "detal",
       });
     }
   };
@@ -187,20 +213,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const comprarPlan = async (plan: Plan): Promise<Compra | null> => {
-    if (state.saldo < plan.precio) return null;
+    const precioEfectivo = getPrecioEfectivo(plan, state.perfilPrecio);
+    if (state.saldo < precioEfectivo) return null;
 
     const asignado = await asignarPerfilData(plan.nombre, state.user || "desconocido");
     if (!asignado) return null;
 
     const now = new Date();
+    const codigoHex = generateCodigoHex();
     const nuevaCompra: Compra = {
       codigo: generateCodigo(),
+      codigoHex,
       estado: "Disponible",
       fechaCompra: formatoFecha(now),
       fechaCompraISO: now.toISOString(),
       plataforma: plan.nombre,
       informacion: state.user ? generateInformacion(state.user) : "-",
-      valorCompra: plan.precio,
+      valorCompra: precioEfectivo,
       correo: asignado.correo,
       contraseña: asignado.contraseña,
       perfil: asignado.perfil,
@@ -210,14 +239,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     setState((prev) => ({
       ...prev,
-      saldo: prev.saldo - plan.precio,
+      saldo: prev.saldo - precioEfectivo,
       historialCompras: [nuevaCompra, ...prev.historialCompras],
     }));
     if (state.user) {
       // Solo actualizar saldo en la tabla clientes (NO tocar historialCompras para evitar duplicados)
       await actualizarCliente(state.user, (c) => ({
         ...c,
-        saldo: c.saldo - plan.precio,
+        saldo: c.saldo - precioEfectivo,
       }));
       // Insertar la compra UNA sola vez en la tabla compras
       await insertarCompra(state.user, nuevaCompra);
@@ -229,8 +258,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     nombre?: string;
     contraseñaActual?: string;
     nuevaContraseña?: string;
+    perfilPrecio?: PerfilPrecio;
   }): Promise<{ ok: boolean; error?: string }> => {
     if (!state.user) return { ok: false, error: "No hay sesión activa" };
+    if (opciones.perfilPrecio !== undefined) {
+      setState((prev) => ({ ...prev, perfilPrecio: opciones.perfilPrecio! }));
+      await actualizarCliente(state.user, (c) => ({
+        ...c,
+        perfilPrecio: opciones.perfilPrecio!,
+      }));
+    }
     if (opciones.nombre !== undefined) {
       const val = opciones.nombre?.trim() || null;
       setState((prev) => ({ ...prev, nombrePerfil: val }));

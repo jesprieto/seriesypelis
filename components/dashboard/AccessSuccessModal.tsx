@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import confetti from "canvas-confetti";
 import { Copy } from "lucide-react";
+import { requiereConexionWhatsApp } from "@/lib/plataformas";
 import type { Compra } from "@/lib/types";
 
 interface AccessSuccessModalProps {
@@ -10,9 +11,13 @@ interface AccessSuccessModalProps {
   onClose: () => void;
 }
 
-function textoParaCopiar(compra: Compra): string {
+function textoParaCopiar(compra: Compra, soloCodigo: boolean = false): string {
+  if (soloCodigo) {
+    return `${compra.plataforma} - Código: ${compra.codigoHex ?? compra.codigo}`;
+  }
   const lineas = [
     `🎬 ${compra.plataforma} Pantalla`,
+    `📋 Código: ${compra.codigoHex ?? compra.codigo}`,
     "",
     `📧 Correo: ${compra.correo ?? "-"}`,
     `🔑 Contraseña: ${compra.contraseña ?? "-"}`,
@@ -23,11 +28,15 @@ function textoParaCopiar(compra: Compra): string {
   return lineas.join("\n");
 }
 
+const MENSAJE_WHATSAPP =
+  "Copia estos datos y envíalos por WhatsApp al administrador para que te haga la conexión con tus accesos actuales.";
+
 export default function AccessSuccessModal({ compra, onClose }: AccessSuccessModalProps) {
   const [copiado, setCopiado] = useState(false);
+  const esConexionWhatsApp = requiereConexionWhatsApp(compra.plataforma);
 
   const handleCopiar = async () => {
-    const texto = textoParaCopiar(compra);
+    const texto = textoParaCopiar(compra, esConexionWhatsApp);
     try {
       await navigator.clipboard.writeText(texto);
       setCopiado(true);
@@ -90,8 +99,18 @@ export default function AccessSuccessModal({ compra, onClose }: AccessSuccessMod
           <p className="font-bold text-gray-900">
             {compra.plataforma} Pantalla
           </p>
+          <p className="text-sm text-gray-600 mt-2 font-mono tracking-wider">
+            Código: {compra.codigoHex ?? compra.codigo}
+          </p>
         </div>
 
+        {esConexionWhatsApp ? (
+          <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 mb-4">
+            <p className="text-sm text-gray-700 font-medium leading-relaxed">
+              {MENSAJE_WHATSAPP}
+            </p>
+          </div>
+        ) : (
         <div className="space-y-3 rounded-xl bg-gray-50 border border-gray-200 p-4 mb-4">
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">Correo</span>
@@ -124,7 +143,9 @@ export default function AccessSuccessModal({ compra, onClose }: AccessSuccessMod
             </span>
           </div>
         </div>
+        )}
 
+        {!esConexionWhatsApp && (
         <button
           type="button"
           onClick={handleCopiar}
@@ -133,6 +154,18 @@ export default function AccessSuccessModal({ compra, onClose }: AccessSuccessMod
           <Copy className="w-4 h-4 shrink-0" />
           {copiado ? "¡Copiado!" : "Copiar datos"}
         </button>
+        )}
+
+        {esConexionWhatsApp && (
+        <button
+          type="button"
+          onClick={handleCopiar}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors mb-3"
+        >
+          <Copy className="w-4 h-4 shrink-0" />
+          {copiado ? "¡Copiado!" : "Copiar código para enviar"}
+        </button>
+        )}
 
         <button
           onClick={onClose}

@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { Copy } from "lucide-react";
+import { requiereConexionWhatsApp } from "@/lib/plataformas";
 import type { Compra } from "@/lib/types";
 
 interface AccesoModalProps {
@@ -8,10 +11,24 @@ interface AccesoModalProps {
   onClose: () => void;
 }
 
+const MENSAJE_WHATSAPP =
+  "Copia estos datos y envíalos por WhatsApp al administrador para que te haga la conexión con tus accesos actuales.";
+
 export default function AccesoModal({ compra, isOpen, onClose }: AccesoModalProps) {
+  const [copiado, setCopiado] = useState(false);
   if (!isOpen || !compra) return null;
 
   const suspendido = compra.estado === "Suspendido";
+  const esConexionWhatsApp = requiereConexionWhatsApp(compra.plataforma);
+
+  const handleCopiar = async () => {
+    const texto = `${compra.plataforma} - Código: ${compra.codigoHex ?? compra.codigo}`;
+    try {
+      await navigator.clipboard.writeText(texto);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {}
+  };
 
   return (
     <div
@@ -38,6 +55,15 @@ export default function AccesoModal({ compra, isOpen, onClose }: AccesoModalProp
           <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 mb-6">
             <p className="text-sm text-amber-800">
               Este acceso fue suspendido. Los datos de correo, contraseña, perfil y pin ya no están disponibles.
+            </p>
+          </div>
+        ) : esConexionWhatsApp ? (
+          <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 mb-6">
+            <p className="text-sm text-gray-700 font-medium leading-relaxed">
+              {MENSAJE_WHATSAPP}
+            </p>
+            <p className="text-sm text-gray-600 mt-2 font-mono">
+              Código: {compra.codigoHex ?? compra.codigo}
             </p>
           </div>
         ) : (
@@ -73,6 +99,17 @@ export default function AccesoModal({ compra, isOpen, onClose }: AccesoModalProp
               </span>
             </div>
           </div>
+        )}
+
+        {esConexionWhatsApp && !suspendido && (
+          <button
+            type="button"
+            onClick={handleCopiar}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors mb-3"
+          >
+            <Copy className="w-4 h-4 shrink-0" />
+            {copiado ? "¡Copiado!" : "Copiar código"}
+          </button>
         )}
 
         <button

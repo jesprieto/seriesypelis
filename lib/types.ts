@@ -6,13 +6,19 @@ export interface Plan {
   id: string;
   nombre: string;
   precio: number;
+  precioMayorista?: number;
+  precioDetal?: number;
   imagen?: string;
+  promo?: boolean;
 }
+
+export type PerfilPrecio = "mayorista" | "detal";
 
 export type EstadoCompra = "Disponible" | "Expirado" | "Suspendido";
 
 export interface Compra {
   codigo: string;
+  codigoHex?: string;
   estado: EstadoCompra;
   fechaCompra: string;
   fechaCompraISO?: string;
@@ -54,6 +60,7 @@ export interface Cliente {
   whatsapp?: string;
   avatarEmoji?: string;
   saldo: number;
+  perfilPrecio?: PerfilPrecio;
   historialCompras: Compra[];
 }
 

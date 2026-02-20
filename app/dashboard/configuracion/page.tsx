@@ -7,7 +7,7 @@ import { getAvatarParaCliente, getClienteByCorreo } from "@/lib/data";
 import type { Cliente } from "@/lib/types";
 
 export default function ConfiguracionPage() {
-  const { saldo, historialCompras, user, nombrePerfil, avatarEmoji, updatePerfil, refreshCliente } = useAuth();
+  const { saldo, historialCompras, user, nombrePerfil, avatarEmoji, perfilPrecio, updatePerfil, refreshCliente } = useAuth();
   const [nombre, setNombre] = useState("");
   const [cliente, setCliente] = useState<Cliente | null>(null);
   useEffect(() => {
@@ -109,6 +109,37 @@ export default function ConfiguracionPage() {
               Guardar nombre
             </button>
           </form>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Perfil de precios</h2>
+          <p className="text-sm text-gray-600 mb-3">
+            Selecciona si eres mayorista o compras al detal. Esto afecta los precios que ves en las plataformas.
+          </p>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => updatePerfil({ perfilPrecio: "mayorista" })}
+              className={`px-4 py-2.5 rounded-xl font-medium transition-colors ${
+                perfilPrecio === "mayorista"
+                  ? "bg-orange-500 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              Mayorista
+            </button>
+            <button
+              type="button"
+              onClick={() => updatePerfil({ perfilPrecio: "detal" })}
+              className={`px-4 py-2.5 rounded-xl font-medium transition-colors ${
+                perfilPrecio === "detal"
+                  ? "bg-orange-500 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              Detal
+            </button>
+          </div>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">

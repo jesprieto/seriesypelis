@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Pencil, Trash2 } from "lucide-react";
 import { getPlanes, setPlanes, updatePlan, deletePlan, contarPerfilesDisponibles } from "@/lib/data";
 import { PLATAFORMAS_OFICIALES } from "@/lib/plataformas";
+import { getPreciosDefault } from "@/lib/preciosDefault";
 import ProcesandoSpinner from "@/components/ui/ProcesandoSpinner";
 import { uploadPlatformImage } from "@/lib/storage";
 import { isSupabaseConfigured } from "@/lib/supabase";
@@ -78,14 +79,18 @@ function PlanRow({
 export default function CrearPlataformaTab() {
   const [planes, setPlanesState] = useState<Plan[]>([]);
   const [nombre, setNombre] = useState("");
-  const [precio, setPrecio] = useState("");
+  const [precioMayorista, setPrecioMayorista] = useState("");
+  const [precioDetal, setPrecioDetal] = useState("");
+  const [promo, setPromo] = useState(false);
   const [imagenPreview, setImagenPreview] = useState<string | null>(null);
   const [imagenFile, setImagenFile] = useState<File | null>(null);
   const [imagenBase64, setImagenBase64] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<{ tipo: "ok" | "error"; text: string } | null>(null);
   const [editando, setEditando] = useState<Plan | null>(null);
   const [editNombre, setEditNombre] = useState("");
-  const [editPrecio, setEditPrecio] = useState("");
+  const [editPrecioMayorista, setEditPrecioMayorista] = useState("");
+  const [editPrecioDetal, setEditPrecioDetal] = useState("");
+  const [editPromo, setEditPromo] = useState(false);
   const [editImagen, setEditImagen] = useState<string | null>(null);
   const [editImagenFile, setEditImagenFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -136,16 +141,29 @@ export default function CrearPlataformaTab() {
     reader.readAsDataURL(file);
   };
 
+  const handlePlataformaSelect = (plat: string) => {
+    setNombre(plat);
+    if (plat) {
+      const def = getPreciosDefault(plat);
+      setPrecioMayorista(def.mayorista.toLocaleString("es-CO"));
+      setPrecioDetal(def.detal.toLocaleString("es-CO"));
+    } else {
+      setPrecioMayorista("");
+      setPrecioDetal("");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMensaje(null);
-    const valor = parseInt(precio.replace(/\D/g, ""), 10);
+    const valMayorista = parseInt(precioMayorista.replace(/\D/g, ""), 10);
+    const valDetal = parseInt(precioDetal.replace(/\D/g, ""), 10);
     if (!nombre) {
       setMensaje({ tipo: "error", text: "Selecciona una plataforma" });
       return;
     }
-    if (isNaN(valor) || valor <= 0) {
-      setMensaje({ tipo: "error", text: "El valor debe ser un número mayor a 0" });
+    if (isNaN(valMayorista) || valMayorista <= 0 || isNaN(valDetal) || valDetal <= 0) {
+      setMensaje({ tipo: "error", text: "Ambos precios deben ser números mayores a 0" });
       return;
     }
     setLoading(true);
@@ -179,8 +197,11 @@ export default function CrearPlataformaTab() {
       const nuevoPlan: Plan = {
         id: planId,
         nombre,
-        precio: valor,
+        precio: valDetal,
+        precioMayorista: valMayorista,
+        precioDetal: valDetal,
         imagen: imagenUrl,
+        promo,
       };
       await setPlanes([...lista, nuevoPlan]);
       refresh();
@@ -192,7 +213,9 @@ export default function CrearPlataformaTab() {
           : "Plataforma creada correctamente",
       });
       setNombre("");
-      setPrecio("");
+      setPrecioMayorista("");
+      setPrecioDetal("");
+      setPromo(false);
       setImagenBase64(null);
       setImagenPreview(null);
       setImagenFile(null);
@@ -205,16 +228,20 @@ export default function CrearPlataformaTab() {
   const handleEditar = (plan: Plan) => {
     setEditando(plan);
     setEditNombre(plan.nombre);
-    setEditPrecio(plan.precio.toLocaleString("es-CO"));
+    const def = getPreciosDefault(plan.nombre);
+    setEditPrecioMayorista((plan.precioMayorista ?? def.mayorista).toLocaleString("es-CO"));
+    setEditPrecioDetal((plan.precioDetal ?? def.detal).toLocaleString("es-CO"));
+    setEditPromo(plan.promo ?? false);
     setEditImagen(plan.imagen || null);
   };
 
   const handleGuardarEdicion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editando) return;
-    const valor = parseInt(editPrecio.replace(/\D/g, ""), 10);
+    const valMayorista = parseInt(editPrecioMayorista.replace(/\D/g, ""), 10);
+    const valDetal = parseInt(editPrecioDetal.replace(/\D/g, ""), 10);
     if (!editNombre.trim()) return;
-    if (isNaN(valor) || valor <= 0) return;
+    if (isNaN(valMayorista) || valMayorista <= 0 || isNaN(valDetal) || valDetal <= 0) return;
     setLoading(true);
     try {
       let imagenUrl: string | undefined = editImagen || undefined;
@@ -239,8 +266,11 @@ export default function CrearPlataformaTab() {
       const planActualizado = {
         ...editando,
         nombre: editNombre.trim(),
-        precio: valor,
+        precio: valDetal,
+        precioMayorista: valMayorista,
+        precioDetal: valDetal,
         imagen: imagenUrl,
+        promo: editPromo,
       };
       await updatePlan(planActualizado);
       await refresh();
@@ -320,29 +350,61 @@ export default function CrearPlataformaTab() {
             </label>
             <select
               value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
+              onChange={(e) => handlePlataformaSelect(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400"
               required
             >
               <option value="">Seleccionar plataforma...</option>
-              {PLATAFORMAS_OFICIALES.filter((p) => !planes.some((plan) => plan.nombre === p)).map((plat) => (
+              {PLATAFORMAS_OFICIALES.map((plat) => (
                 <option key={plat} value={plat}>{plat}</option>
               ))}
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Valor (COP)
-            </label>
-            <input
-              type="text"
-              value={precio}
-              onChange={(e) => setPrecio(formatPrecio(e.target.value))}
-              placeholder="Ej: 12.000"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Precio mayorista (COP)
+              </label>
+              <input
+                type="text"
+                value={precioMayorista}
+                onChange={(e) => setPrecioMayorista(formatPrecio(e.target.value))}
+                placeholder="Ej: 10.000"
+                disabled={!promo}
+                className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 ${!promo ? "bg-gray-50 cursor-not-allowed" : ""}`}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Precio detal (COP)
+              </label>
+              <input
+                type="text"
+                value={precioDetal}
+                onChange={(e) => setPrecioDetal(formatPrecio(e.target.value))}
+                placeholder="Ej: 12.000"
+                disabled={!promo}
+                className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 ${!promo ? "bg-gray-50 cursor-not-allowed" : ""}`}
+              />
+            </div>
           </div>
+          {!promo && (
+            <p className="text-xs text-gray-500">Activa Promo para editar los precios.</p>
+          )}
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={promo}
+              onChange={(e) => setPromo(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400"
+            />
+            <span className="text-sm font-medium text-gray-700">Promo</span>
+          </label>
+          <p className="text-xs text-gray-500 -mt-2">
+            Si está activo, la plataforma aparecerá en la pestaña Promociones y podrás editar su precio.
+          </p>
 
           {mensaje && (
             <div
@@ -464,16 +526,40 @@ export default function CrearPlataformaTab() {
                   <option value={editNombre}>{editNombre}</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Valor (COP)</label>
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
-                  type="text"
-                  value={editPrecio}
-                  onChange={(e) => setEditPrecio(formatPrecio(e.target.value))}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400/50"
-                  required
+                  type="checkbox"
+                  checked={editPromo}
+                  onChange={(e) => setEditPromo(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400"
                 />
+                <span className="text-sm font-medium text-gray-700">Promo</span>
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Mayorista (COP)</label>
+                  <input
+                    type="text"
+                    value={editPrecioMayorista}
+                    onChange={(e) => setEditPrecioMayorista(formatPrecio(e.target.value))}
+                    disabled={!editPromo}
+                    className={`w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400/50 ${!editPromo ? "bg-gray-50 cursor-not-allowed" : ""}`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Detal (COP)</label>
+                  <input
+                    type="text"
+                    value={editPrecioDetal}
+                    onChange={(e) => setEditPrecioDetal(formatPrecio(e.target.value))}
+                    disabled={!editPromo}
+                    className={`w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400/50 ${!editPromo ? "bg-gray-50 cursor-not-allowed" : ""}`}
+                  />
+                </div>
               </div>
+              {!editPromo && (
+                <p className="text-xs text-gray-500">Activa Promo para editar los precios.</p>
+              )}
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"

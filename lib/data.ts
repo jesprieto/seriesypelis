@@ -70,6 +70,11 @@ export async function contarPerfilesDisponibles(plataforma: string): Promise<num
   return db.contarPerfilesDisponiblesInSupabase(nombreNorm);
 }
 
+/** Obtiene disponibilidad de todas las plataformas en una sola llamada */
+export async function getDisponibilidadTodasPlataformas(): Promise<Record<string, number>> {
+  return db.getDisponibilidadTodasPlataformasInSupabase();
+}
+
 // ─── Inventario ───
 
 export async function getInventario(): Promise<InventarioPlataforma[]> {

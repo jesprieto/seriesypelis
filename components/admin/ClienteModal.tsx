@@ -132,7 +132,8 @@ export default function ClienteModal({
               ) : (
                 <>
                   <div className="rounded-xl overflow-hidden border border-gray-200 min-w-[620px]">
-                    <div className="grid grid-cols-[minmax(130px,1fr)_minmax(90px,1fr)_minmax(130px,1.5fr)_minmax(90px,1fr)_minmax(65px,0.8fr)_minmax(90px,1fr)_minmax(85px,1fr)] items-center py-3 px-4 bg-gray-100 text-sm font-semibold text-gray-600 gap-2">
+                    <div className="grid grid-cols-[minmax(100px,1fr)_minmax(130px,1fr)_minmax(90px,1fr)_minmax(130px,1.5fr)_minmax(90px,1fr)_minmax(65px,0.8fr)_minmax(90px,1fr)_minmax(85px,1fr)] items-center py-3 px-4 bg-gray-100 text-sm font-semibold text-gray-600 gap-2">
+                      <span className="text-left">Código</span>
                       <span className="text-left">Fecha</span>
                       <span className="text-center">Plataforma</span>
                       <span className="text-center">Correo</span>
@@ -147,11 +148,12 @@ export default function ClienteModal({
                       const muestraDatos = !suspendido;
                       return (
                         <div
-                          key={`${c.codigo}-${i}`}
-                          className={`grid grid-cols-[minmax(130px,1fr)_minmax(90px,1fr)_minmax(130px,1.5fr)_minmax(90px,1fr)_minmax(65px,0.8fr)_minmax(90px,1fr)_minmax(85px,1fr)] items-center py-4 px-4 text-sm gap-2 border-t border-gray-100 ${
+                          key={`${c.codigoHex ?? c.codigo}-${i}`}
+                          className={`grid grid-cols-[minmax(100px,1fr)_minmax(130px,1fr)_minmax(90px,1fr)_minmax(130px,1.5fr)_minmax(90px,1fr)_minmax(65px,0.8fr)_minmax(90px,1fr)_minmax(85px,1fr)] items-center py-4 px-4 text-sm gap-2 border-t border-gray-100 ${
                             i % 2 === 0 ? "bg-white" : "bg-gray-50/50"
                           }`}
                         >
+                        <span className="text-gray-900 font-mono text-xs">{c.codigoHex ?? c.codigo}</span>
                         <span className="text-gray-600 text-left text-xs whitespace-nowrap">{c.fechaCompra}</span>
                       <span className="font-medium text-gray-800 text-center">{c.plataforma}</span>
                       <span className="text-gray-600 text-center text-sm truncate" title={muestraDatos ? (c.correo ?? "-") : ""}>
