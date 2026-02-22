@@ -98,3 +98,24 @@ export interface PerfilAsignado {
 
 export const DEFAULT_SALDO = 0;
 export const DEFAULT_PERFILES = 4;
+
+// ─── Combos ───
+
+export interface Combo {
+  id: string;
+  descripcion: string;
+  precio: number;
+  imagen?: string;
+}
+
+export interface AccesoCombo {
+  id: string;
+  comboId: string;
+  descripcionCombo: string;
+  correoComprador: string;
+  unidadesDisponibles: number;
+  correo?: string;
+  contraseña?: string;
+  tipoPlataforma?: string;
+  estado: "pendiente" | "entregado";
+}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getClientes, actualizarCliente, getClienteByCorreo } from "@/lib/data";
-import type { Cliente } from "@/lib/types";
+import type { Cliente, PerfilPrecio } from "@/lib/types";
 import { getPlataformasActivas } from "@/lib/utils";
 import ClienteModal from "./ClienteModal";
 import ProcesandoSpinner from "@/components/ui/ProcesandoSpinner";
@@ -57,6 +57,16 @@ export default function ClientesTab() {
     refresh();
   };
 
+  const handleCambiarPerfilPrecio = async (correo: string, perfilPrecio: PerfilPrecio) => {
+    await actualizarCliente(correo, (c) => ({
+      ...c,
+      perfilPrecio,
+    }));
+    const updated = await getClienteByCorreo(correo);
+    if (updated) setSelectedCliente(updated);
+    refresh();
+  };
+
   return (
     <div>
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Clientes</h2>
@@ -84,6 +94,9 @@ export default function ClientesTab() {
                 <th className="text-center py-3 px-4 text-sm font-semibold text-gray-600">
                   Plataformas activas
                 </th>
+                <th className="text-center py-3 px-4 text-sm font-semibold text-gray-600">
+                  Perfil
+                </th>
                 <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">
                   Acciones
                 </th>
@@ -93,7 +106,7 @@ export default function ClientesTab() {
               {clientes.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="py-12 text-center text-gray-500 text-sm"
                   >
                     No hay clientes registrados
@@ -118,6 +131,34 @@ export default function ClientesTab() {
                     <td className="py-3 px-4 text-sm text-gray-700 text-center">
                       {getPlataformasActivas(c.historialCompras).length}
                     </td>
+                    <td className="py-3 px-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleCambiarPerfilPrecio(c.correo, "mayorista")}
+                          title="Cambiar a Mayorista"
+                          className={`px-2 py-1 text-xs font-medium rounded-l-md transition-colors ${
+                            (c.perfilPrecio ?? "detal") === "mayorista"
+                              ? "bg-orange-500 text-white"
+                              : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+                          }`}
+                        >
+                          May.
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleCambiarPerfilPrecio(c.correo, "detal")}
+                          title="Cambiar a Minorista"
+                          className={`px-2 py-1 text-xs font-medium rounded-r-md transition-colors ${
+                            (c.perfilPrecio ?? "detal") === "detal"
+                              ? "bg-orange-500 text-white"
+                              : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+                          }`}
+                        >
+                          Min.
+                        </button>
+                      </div>
+                    </td>
                     <td className="py-3 px-4 text-right">
                       <button
                         onClick={() => handleAbrir(c)}
@@ -140,6 +181,7 @@ export default function ClientesTab() {
         isOpen={modalOpen}
         onClose={handleCerrarModal}
         onAgregarSaldo={handleAgregarSaldo}
+        onCambiarPerfilPrecio={handleCambiarPerfilPrecio}
       />
     </div>
   );

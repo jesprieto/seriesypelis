@@ -10,7 +10,7 @@ const WHATSAPP_SOPORTE = "573146151825";
 import { useAuth } from "@/context/AuthContext";
 import { getAvatarParaCliente } from "@/lib/types";
 
-const navItems = [
+const navItemsBase = [
   { href: "/dashboard/planes", label: "Planes", icon: "/store.svg" },
   { href: "/dashboard/historial", label: "Historial de compras", icon: Clock },
   { href: "/dashboard/promociones", label: "Promociones", icon: Tag },
@@ -20,7 +20,10 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, nombrePerfil, nombreCliente, avatarEmoji, logout } = useAuth();
+  const { user, nombrePerfil, nombreCliente, avatarEmoji, perfilPrecio, logout } = useAuth();
+  const navItems = perfilPrecio === "mayorista"
+    ? navItemsBase.filter((item) => item.href !== "/dashboard/promociones")
+    : navItemsBase;
   const avatar = avatarEmoji ?? (user ? getAvatarParaCliente(user).emoji : "🙂");
   const avatarColor = user ? getAvatarParaCliente(user).color : "bg-orange-100";
   const nombreMostrar = nombrePerfil || nombreCliente || user?.split("@")[0] || "Usuario";

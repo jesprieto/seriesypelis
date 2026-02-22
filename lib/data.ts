@@ -5,7 +5,7 @@
 
 import { normalizarPlataforma } from "./plataformas";
 import * as db from "./supabaseData";
-import type { Plan, Cliente, Compra, InventarioPlataforma, CuentaPlataforma } from "./types";
+import type { Plan, Cliente, Compra, InventarioPlataforma, CuentaPlataforma, Combo, AccesoCombo } from "./types";
 
 // ─── Planes ───
 
@@ -129,6 +129,54 @@ export async function agregarCuentaAlInventario(
 ): Promise<void> {
   const nombreNorm = normalizarPlataforma(plataforma);
   await db.agregarCuentaAlInventarioInSupabase(nombreNorm, cuenta);
+}
+
+// ─── Combos ───
+
+export async function getCombos(): Promise<Combo[]> {
+  return db.getCombosFromSupabase();
+}
+
+export async function insertCombo(data: {
+  id?: string;
+  descripcion: string;
+  precio: number;
+  imagen?: string;
+}): Promise<void> {
+  await db.insertComboInSupabase(data);
+}
+
+export async function updateCombo(combo: Combo): Promise<void> {
+  await db.updateComboInSupabase(combo);
+}
+
+export async function deleteCombo(comboId: string): Promise<void> {
+  await db.deleteComboFromSupabase(comboId);
+}
+
+// ─── Accesos combo ───
+
+export async function getAccesosCombo(): Promise<AccesoCombo[]> {
+  return db.getAccesosComboFromSupabase();
+}
+
+export async function insertAccesoCombo(data: {
+  comboId: string;
+  correoComprador: string;
+  unidadesDisponibles: number;
+}): Promise<void> {
+  await db.insertAccesoComboInSupabase(data);
+}
+
+export async function updateAccesoCombo(
+  accesoId: string,
+  data: { correo?: string; contraseña?: string; tipoPlataforma?: string; estado?: "pendiente" | "entregado" }
+): Promise<void> {
+  await db.updateAccesoComboInSupabase(accesoId, data);
+}
+
+export async function deleteAccesoCombo(accesoId: string): Promise<void> {
+  await db.deleteAccesoComboFromSupabase(accesoId);
 }
 
 // ─── Re-export ───

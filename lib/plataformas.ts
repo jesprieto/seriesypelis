@@ -63,3 +63,8 @@ export function requiereConexionWhatsApp(plataforma: string): boolean {
     (p) => normalizarPlataforma(plataforma) === p
   );
 }
+
+/** Compras de combo requieren contactar por WhatsApp para recibir accesos */
+export function esCompraCombo(plataforma: string): boolean {
+  return plataforma.startsWith("Combo");
+}

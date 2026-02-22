@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import confetti from "canvas-confetti";
 import { Copy } from "lucide-react";
-import { requiereConexionWhatsApp } from "@/lib/plataformas";
+import { requiereConexionWhatsApp, esCompraCombo } from "@/lib/plataformas";
 import type { Compra } from "@/lib/types";
 
 interface AccessSuccessModalProps {
@@ -33,7 +33,7 @@ const MENSAJE_WHATSAPP =
 
 export default function AccessSuccessModal({ compra, onClose }: AccessSuccessModalProps) {
   const [copiado, setCopiado] = useState(false);
-  const esConexionWhatsApp = requiereConexionWhatsApp(compra.plataforma);
+  const esConexionWhatsApp = requiereConexionWhatsApp(compra.plataforma) || esCompraCombo(compra.plataforma);
 
   const handleCopiar = async () => {
     const texto = textoParaCopiar(compra, esConexionWhatsApp);

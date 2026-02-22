@@ -8,9 +8,10 @@ import {
   actualizarCliente,
   asignarPerfilDisponible as asignarPerfilData,
   insertarCompra,
+  insertAccesoCombo,
   registrarCliente,
 } from "@/lib/data";
-import type { Compra, Plan, PerfilPrecio } from "@/lib/types";
+import type { Compra, Plan, PerfilPrecio, Combo } from "@/lib/types";
 
 const STORAGE_KEY = "pelis-series-auth";
 const PERFIL_KEY_PREFIX = "pelis-series-perfil-";
@@ -63,6 +64,7 @@ interface AuthContextType extends AuthState {
   login: (correo: string, clave: string) => void;
   logout: () => void;
   comprarPlan: (plan: Plan) => Promise<Compra | null>;
+  comprarCombo: (combo: Combo) => Promise<Compra | null>;
   updatePerfil: (opciones: {
     nombre?: string;
     contraseñaActual?: string;
@@ -254,6 +256,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return nuevaCompra;
   };
 
+  const comprarCombo = async (combo: Combo): Promise<Compra | null> => {
+    if (state.saldo < combo.precio || !state.user) return null;
+
+    await insertAccesoCombo({
+      comboId: combo.id,
+      correoComprador: state.user,
+      unidadesDisponibles: 2,
+    });
+
+    const now = new Date();
+    const codigoHex = generateCodigoHex();
+    const nuevaCompra: Compra = {
+      codigo: generateCodigo(),
+      codigoHex,
+      estado: "Disponible",
+      fechaCompra: formatoFecha(now),
+      fechaCompraISO: now.toISOString(),
+      plataforma: "Combo: " + combo.descripcion,
+      informacion: state.user ? generateInformacion(state.user) : "-",
+      valorCompra: combo.precio,
+    };
+
+    setState((prev) => ({
+      ...prev,
+      saldo: prev.saldo - combo.precio,
+      historialCompras: [nuevaCompra, ...prev.historialCompras],
+    }));
+
+    await actualizarCliente(state.user, (c) => ({
+      ...c,
+      saldo: c.saldo - combo.precio,
+    }));
+    await insertarCompra(state.user, nuevaCompra);
+
+    return nuevaCompra;
+  };
+
   const updatePerfil = async (opciones: {
     nombre?: string;
     contraseñaActual?: string;
@@ -310,6 +349,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         comprarPlan,
+        comprarCombo,
         updatePerfil,
         refreshCliente,
       }}

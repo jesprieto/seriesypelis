@@ -61,6 +61,39 @@ export async function uploadPlatformImage(
 }
 
 /**
+ * Sube una imagen de combo al bucket ( misma ruta base que plataformas ).
+ */
+export async function uploadComboImage(
+  file: File,
+  comboId: string
+): Promise<{ url: string } | { error: string }> {
+  if (!isSupabaseConfigured()) return { error: "Supabase no configurado" };
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const sanitizedExt = ["jpeg", "jpg", "png", "webp", "gif"].includes(ext) ? ext : "jpg";
+  const filePath = `combos/${comboId}.${sanitizedExt}`;
+
+  const { error } = await supabase.storage.from(BUCKET).upload(filePath, file, {
+    contentType: file.type,
+    upsert: true,
+    cacheControl: "3600",
+  });
+
+  if (error) return { error: error.message };
+
+  const TEN_YEARS = 60 * 60 * 24 * 365 * 10;
+  const { data: signedData, error: signedError } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(filePath, TEN_YEARS);
+
+  if (signedError || !signedData?.signedUrl) {
+    const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
+    return { url: urlData.publicUrl };
+  }
+
+  return { url: signedData.signedUrl };
+}
+
+/**
  * Convierte base64 (data URL) a File para subir. Usado cuando viene de input previo.
  */
 export function dataUrlToFile(dataUrl: string, filename: string): File | null {

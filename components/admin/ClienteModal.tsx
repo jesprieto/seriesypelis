@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Cliente, Compra } from "@/lib/types";
+import type { Cliente, Compra, PerfilPrecio } from "@/lib/types";
 import { esCompraDisponible } from "@/lib/utils";
 
 interface ClienteModalProps {
@@ -9,6 +9,7 @@ interface ClienteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAgregarSaldo: (correo: string, monto: number) => void;
+  onCambiarPerfilPrecio: (correo: string, perfilPrecio: PerfilPrecio) => void;
 }
 
 export default function ClienteModal({
@@ -16,6 +17,7 @@ export default function ClienteModal({
   isOpen,
   onClose,
   onAgregarSaldo,
+  onCambiarPerfilPrecio,
 }: ClienteModalProps) {
   const [montoSaldo, setMontoSaldo] = useState("");
   const [mostrarAgregar, setMostrarAgregar] = useState(false);
@@ -61,16 +63,43 @@ export default function ClienteModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <h3 className="text-lg font-semibold text-gray-900">
               {cliente.nombre}
             </h3>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-gray-100 text-gray-500"
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 shrink-0"
             >
               ✕
             </button>
+          </div>
+          <div className="mt-4 flex items-center gap-3">
+            <span className="text-sm font-medium text-gray-700">Perfil de precios (lo que ve el cliente):</span>
+            <div className="flex rounded-lg overflow-hidden border border-gray-200 p-0.5 bg-gray-100">
+              <button
+                type="button"
+                onClick={() => onCambiarPerfilPrecio(cliente.correo, "mayorista")}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  (cliente.perfilPrecio ?? "detal") === "mayorista"
+                    ? "bg-orange-500 text-white"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Mayorista
+              </button>
+              <button
+                type="button"
+                onClick={() => onCambiarPerfilPrecio(cliente.correo, "detal")}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  (cliente.perfilPrecio ?? "detal") === "detal"
+                    ? "bg-orange-500 text-white"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Minorista
+              </button>
+            </div>
           </div>
         </div>
 

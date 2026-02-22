@@ -14,6 +14,8 @@ import type {
   CuentaPlataforma,
   Perfil,
   PerfilAsignado,
+  Combo,
+  AccesoCombo,
 } from "./types";
 
 // ─── Planes ───
@@ -542,6 +544,133 @@ function mapCompraToDb(c: Compra, clienteCorreo: string): Record<string, unknown
     fecha_expiracion: c.fechaExpiracion ?? null,
     fecha_expiracion_iso: c.fechaExpiracionISO ?? null,
   };
+}
+
+// ─── Combos ───
+
+export async function getCombosFromSupabase(): Promise<Combo[]> {
+  if (!isSupabaseConfigured()) return [];
+  const { data, error } = await supabase
+    .from("combos")
+    .select("id, descripcion, precio, imagen")
+    .order("descripcion");
+  if (error) {
+    console.error("getCombos error:", error);
+    return [];
+  }
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    descripcion: r.descripcion,
+    precio: r.precio,
+    imagen: r.imagen ?? undefined,
+  }));
+}
+
+export async function insertComboInSupabase(combo: {
+  id?: string;
+  descripcion: string;
+  precio: number;
+  imagen?: string;
+}): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  const row: Record<string, unknown> = {
+    descripcion: combo.descripcion.trim(),
+    precio: combo.precio,
+    imagen: combo.imagen ?? null,
+  };
+  if (combo.id) row.id = combo.id;
+  await supabase.from("combos").insert(row);
+}
+
+export async function updateComboInSupabase(combo: Combo): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  await supabase
+    .from("combos")
+    .update({
+      descripcion: combo.descripcion,
+      precio: combo.precio,
+      imagen: combo.imagen ?? null,
+    })
+    .eq("id", combo.id);
+}
+
+export async function deleteComboFromSupabase(comboId: string): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  await supabase.from("combos").delete().eq("id", comboId);
+}
+
+// ─── Accesos combo ───
+
+export async function getAccesosComboFromSupabase(): Promise<AccesoCombo[]> {
+  if (!isSupabaseConfigured()) return [];
+  const { data: accesosData, error } = await supabase
+    .from("accesos_combo")
+    .select("id, combo_id, correo_comprador, unidades_disponibles, correo, contraseña, tipo_plataforma, estado")
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.error("getAccesosCombo error:", error);
+    return [];
+  }
+  type AccesoComboRaw = {
+    id: string;
+    combo_id: string;
+    correo_comprador: string;
+    unidades_disponibles: number;
+    correo: string | null;
+    contraseña: string | null;
+    tipo_plataforma: string | null;
+    estado: string;
+  };
+  const accesos: AccesoComboRaw[] = (accesosData ?? []) as unknown as AccesoComboRaw[];
+  const combos = await getCombosFromSupabase();
+  const comboMap = Object.fromEntries(combos.map((c) => [c.id, c.descripcion]));
+  return accesos.map((a) => ({
+    id: a.id,
+    comboId: a.combo_id,
+    descripcionCombo: comboMap[a.combo_id] ?? "Combo desconocido",
+    correoComprador: a.correo_comprador,
+    unidadesDisponibles: a.unidades_disponibles,
+    correo: a.correo ?? undefined,
+    contraseña: a.contraseña ?? undefined,
+    tipoPlataforma: a.tipo_plataforma ?? undefined,
+    estado: a.estado as "pendiente" | "entregado",
+  }));
+}
+
+export async function insertAccesoComboInSupabase(data: {
+  comboId: string;
+  correoComprador: string;
+  unidadesDisponibles: number;
+}): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  await supabase.from("accesos_combo").insert({
+    combo_id: data.comboId,
+    correo_comprador: data.correoComprador.trim(),
+    unidades_disponibles: data.unidadesDisponibles,
+  });
+}
+
+export async function updateAccesoComboInSupabase(
+  accesoId: string,
+  data: {
+    correo?: string;
+    contraseña?: string;
+    tipoPlataforma?: string;
+    estado?: "pendiente" | "entregado";
+  }
+): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (data.correo !== undefined) update.correo = data.correo;
+  if (data.contraseña !== undefined) update.contraseña = data.contraseña;
+  if (data.tipoPlataforma !== undefined) update.tipo_plataforma = data.tipoPlataforma;
+  if (data.estado !== undefined) update.estado = data.estado;
+  await supabase.from("accesos_combo").update(update).eq("id", accesoId);
+}
+
+export async function deleteAccesoComboFromSupabase(accesoId: string): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  await supabase.from("accesos_combo").delete().eq("id", accesoId);
 }
 
 // ─── Admin (login) ───

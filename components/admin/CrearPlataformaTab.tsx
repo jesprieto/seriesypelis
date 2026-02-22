@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Pencil, Trash2 } from "lucide-react";
 import { getPlanes, setPlanes, updatePlan, deletePlan, contarPerfilesDisponibles } from "@/lib/data";
 import { PLATAFORMAS_OFICIALES } from "@/lib/plataformas";
+import CombosTab from "./CombosTab";
 import { getPreciosDefault } from "@/lib/preciosDefault";
 import ProcesandoSpinner from "@/components/ui/ProcesandoSpinner";
 import { uploadPlatformImage } from "@/lib/storage";
@@ -76,7 +77,10 @@ function PlanRow({
   );
 }
 
+type SubTabId = "plataformas" | "combos";
+
 export default function CrearPlataformaTab() {
+  const [subTab, setSubTab] = useState<SubTabId>("plataformas");
   const [planes, setPlanesState] = useState<Plan[]>([]);
   const [nombre, setNombre] = useState("");
   const [precioMayorista, setPrecioMayorista] = useState("");
@@ -295,6 +299,31 @@ export default function CrearPlataformaTab() {
   };
 
   return (
+    <div className="flex flex-col w-full">
+      <div className="flex gap-1 mb-6 border-b border-gray-200">
+        <button
+          type="button"
+          onClick={() => setSubTab("plataformas")}
+          className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            subTab === "plataformas" ? "border-orange-500 text-orange-600" : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Plataformas
+        </button>
+        <button
+          type="button"
+          onClick={() => setSubTab("combos")}
+          className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            subTab === "combos" ? "border-orange-500 text-orange-600" : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Combos (2 pantallas)
+        </button>
+      </div>
+
+      {subTab === "combos" ? (
+        <CombosTab />
+      ) : (
     <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 w-full">
       <div className="max-w-xl shrink-0">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Crear plataforma</h2>
@@ -586,6 +615,8 @@ export default function CrearPlataformaTab() {
             </form>
           </div>
         </div>
+      )}
+    </div>
       )}
     </div>
   );
