@@ -19,15 +19,23 @@ export default function PurchaseModal({
 }: PurchaseModalProps) {
   const { comprarPlan, saldo } = useAuth();
   const [compraExitosa, setCompraExitosa] = useState<Compra | null>(null);
-  const [disponibles, setDisponibles] = useState(0);
+  const [disponibles, setDisponibles] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [comprando, setComprando] = useState(false);
+  const [cargandoPerfiles, setCargandoPerfiles] = useState(false);
 
   useEffect(() => {
     if (isOpen && plan) {
-      contarPerfilesDisponibles(plan.nombre).then(setDisponibles);
+      setCargandoPerfiles(true);
+      setDisponibles(null);
       setError("");
       setComprando(false);
+      contarPerfilesDisponibles(plan.nombre)
+        .then(setDisponibles)
+        .finally(() => setCargandoPerfiles(false));
+    } else {
+      setDisponibles(null);
+      setCargandoPerfiles(false);
     }
   }, [isOpen, plan]);
 
@@ -69,7 +77,7 @@ export default function PurchaseModal({
 
   if (!isOpen) return null;
 
-  const sinStock = disponibles === 0;
+  const sinStock = !cargandoPerfiles && disponibles !== null && disponibles === 0;
 
   return (
     <div
@@ -92,13 +100,20 @@ export default function PurchaseModal({
           </div>
         )}
 
+        {cargandoPerfiles && (
+          <div className="mb-4 py-3 px-4 rounded-xl bg-blue-50 border border-blue-100 flex items-center gap-3">
+            <span className="inline-block w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+            <span className="text-sm text-blue-700">Cargando las pantallas disponibles.</span>
+          </div>
+        )}
+
         {sinStock && (
           <div className="mb-4 py-2 px-4 rounded-xl bg-red-50 border border-red-100 text-sm text-red-700">
             No hay perfiles disponibles para esta plataforma
           </div>
         )}
 
-        {!sinStock && (
+        {!cargandoPerfiles && !sinStock && disponibles !== null && (
           <p className="text-sm text-gray-500 mb-4">
             {disponibles} perfil{disponibles !== 1 ? "es" : ""} disponible{disponibles !== 1 ? "s" : ""}
           </p>
@@ -119,7 +134,7 @@ export default function PurchaseModal({
           </button>
           <button
             onClick={handleComprar}
-            disabled={sinStock || comprando}
+            disabled={sinStock || comprando || cargandoPerfiles}
             className="flex-1 py-2.5 px-4 rounded-xl font-medium text-white bg-orange-500 hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[42px]"
           >
             {comprando ? (
@@ -132,6 +147,7 @@ export default function PurchaseModal({
             )}
           </button>
         </div>
+        <p className="mt-4 text-xs text-gray-500">* Al darle click en Comprar, estás comprando un (1) perfil.</p>
       </div>
     </div>
   );

@@ -115,6 +115,23 @@ export async function liberarPerfil(
   );
 }
 
+export async function eliminarPerfilDeCuenta(
+  plataforma: string,
+  cuentaId: string,
+  cuentaCorreo: string,
+  numeroPerfil: number,
+  clienteCorreo?: string | null
+): Promise<boolean> {
+  const nombreNorm = normalizarPlataforma(plataforma);
+  return db.eliminarPerfilDeCuentaInSupabase(
+    nombreNorm,
+    cuentaId,
+    cuentaCorreo,
+    numeroPerfil,
+    clienteCorreo ?? undefined
+  );
+}
+
 export async function eliminarCuentaDelInventario(
   plataforma: string,
   cuentaId: string

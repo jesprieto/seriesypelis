@@ -29,7 +29,7 @@ function textoParaCopiar(compra: Compra, soloCodigo: boolean = false): string {
 }
 
 const MENSAJE_WHATSAPP =
-  "Copia estos datos, dirígete a la opción \"Soporte\" en el menú y pégalos en el WhatsApp de Ventas. Nuestro equipo te responderá con tus accesos a la brevedad.";
+  "Copia la información de este ticket y envíala al chat de ventas para entregar los accesos.";
 
 export default function AccessSuccessModal({ compra, onClose }: AccessSuccessModalProps) {
   const [copiado, setCopiado] = useState(false);

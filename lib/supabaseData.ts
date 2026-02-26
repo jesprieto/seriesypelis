@@ -374,6 +374,49 @@ export async function liberarPerfilInSupabase(
   return true;
 }
 
+/**
+ * Elimina un perfil de una cuenta sin eliminar la cuenta.
+ * Si el perfil está ocupado, suspende la compra asociada.
+ */
+export async function eliminarPerfilDeCuentaInSupabase(
+  plataforma: string,
+  cuentaId: string,
+  cuentaCorreo: string,
+  numeroPerfil: number,
+  clienteCorreo?: string | null
+): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+  const nombrePlat = normalizarPlataforma(plataforma);
+
+  if (clienteCorreo) {
+    const cuentaCorreoLower = (cuentaCorreo ?? "").trim().toLowerCase();
+    const { data: comprasMatch } = await supabase
+      .from("compras")
+      .select("id, correo")
+      .eq("cliente_correo", clienteCorreo)
+      .eq("plataforma", nombrePlat)
+      .eq("perfil", numeroPerfil);
+    const compraId = comprasMatch?.find(
+      (c) => (c.correo ?? "").trim().toLowerCase() === cuentaCorreoLower
+    )?.id;
+    if (compraId) {
+      await suspenderCompraById(compraId);
+    }
+  }
+
+  const { error } = await supabase
+    .from("perfiles")
+    .delete()
+    .eq("cuenta_plataforma_id", cuentaId)
+    .eq("numero", numeroPerfil);
+
+  if (error) {
+    console.error("eliminarPerfilDeCuenta delete perfiles:", error);
+    return false;
+  }
+  return true;
+}
+
 /** Suspende en compras la fila que coincida (por id). */
 async function suspenderCompraById(compraId: string): Promise<void> {
   await supabase

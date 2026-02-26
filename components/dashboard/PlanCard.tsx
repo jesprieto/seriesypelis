@@ -96,9 +96,18 @@ export default function PlanCard({ plan, disponibilidadPrecargada }: PlanCardPro
           </button>
         </div>
         <div className="p-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-semibold text-gray-900">{plan.nombre}</h3>
-            <span className="text-sm font-medium text-orange-600">{formattedPrecio}</span>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-semibold text-gray-900">{plan.nombre}</h3>
+              <span className="text-sm font-medium text-orange-600">{formattedPrecio}</span>
+            </div>
+            <div className="text-sm text-gray-500">
+              {cargando ? (
+                mostrarCargando ? "Cargando..." : "..."
+              ) : (
+                <>{perfilesDisponibles} {perfilesDisponibles === 1 ? "unidad" : "unidades"} disponible{perfilesDisponibles !== 1 ? "s" : ""}</>
+              )}
+            </div>
           </div>
         </div>
       </div>

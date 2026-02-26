@@ -7,6 +7,7 @@ import {
   setInventario,
   correoYaExisteEnPlataforma,
   liberarPerfil,
+  eliminarPerfilDeCuenta,
   eliminarCuentaDelInventario,
   getAccesosCombo,
   getCombos,
@@ -59,6 +60,7 @@ export default function AccesosTab() {
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
   const [cambiandoEstado, setCambiandoEstado] = useState<string | null>(null);
   const [borrandoCuentaId, setBorrandoCuentaId] = useState<string | null>(null);
+  const [borrandoPerfilKey, setBorrandoPerfilKey] = useState<string | null>(null);
   const csvRef = useRef<HTMLInputElement>(null);
 
   // Estados para Combos
@@ -347,6 +349,38 @@ export default function AccesosTab() {
       }
     } finally {
       setCambiandoEstado(null);
+    }
+  };
+
+  const handleEliminarPerfil = async (
+    plataforma: string,
+    cuenta: CuentaPlataforma,
+    perfil: Perfil
+  ) => {
+    const cliente = perfil.clienteCorreo ?? undefined;
+    const msg = perfil.estado === "ocupado" && cliente
+      ? `¿Eliminar el perfil ${perfil.numero}? El cliente ${cliente} verá su acceso como "Suspendido".`
+      : `¿Eliminar el perfil ${perfil.numero} de esta cuenta? La cuenta se conservará.`;
+    if (!confirm(msg)) return;
+    const key = `${plataforma}-${cuenta.id}-${perfil.numero}`;
+    setBorrandoPerfilKey(key);
+    setMensaje(null);
+    try {
+      const ok = await eliminarPerfilDeCuenta(
+        plataforma,
+        cuenta.id,
+        cuenta.correo,
+        perfil.numero,
+        perfil.clienteCorreo ?? undefined
+      );
+      if (ok) {
+        setMensaje({ tipo: "ok", text: "Perfil eliminado. La cuenta se conserva." });
+        await refresh();
+      } else {
+        setMensaje({ tipo: "error", text: "No se pudo eliminar el perfil." });
+      }
+    } finally {
+      setBorrandoPerfilKey(null);
     }
   };
 
@@ -702,6 +736,7 @@ export default function AccesosTab() {
                                 <th className="text-center py-2 px-3 text-xs font-semibold text-gray-500">Estado</th>
                                 <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500">Cliente asignado</th>
                                 <th className="text-center py-2 px-3 text-xs font-semibold text-gray-500">Expira</th>
+                                <th className="text-center py-2 px-3 text-xs font-semibold text-gray-500">Acciones</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -740,6 +775,21 @@ export default function AccesosTab() {
                                     </td>
                                     <td className="py-2 px-3 text-sm text-gray-600 text-center">
                                       {perfil.fechaExpiracion ?? "-"}
+                                    </td>
+                                    <td className="py-2 px-3 text-center">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleEliminarPerfil(plat.plataforma, cuenta, perfil)}
+                                        disabled={borrandoPerfilKey === estadoKey}
+                                        className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                                        title="Eliminar este perfil (la cuenta se conserva)"
+                                      >
+                                        {borrandoPerfilKey === estadoKey ? (
+                                          <span className="inline-block w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                                        ) : (
+                                          <Trash2 className="w-4 h-4" />
+                                        )}
+                                      </button>
                                     </td>
                                   </tr>
                                 );
